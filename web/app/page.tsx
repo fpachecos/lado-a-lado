@@ -1,20 +1,25 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, Suspense, useEffect, useState } from 'react';
 
-export default function HomePage() {
+function CodeRedirect() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [code, setCode] = useState('');
 
-  // Se já vier com ?code= pela URL, redireciona direto
   useEffect(() => {
     const initialCode = searchParams.get('code');
     if (initialCode) {
       router.replace(`/schedule/${initialCode}`);
     }
   }, [searchParams, router]);
+
+  return null;
+}
+
+export default function HomePage() {
+  const [code, setCode] = useState('');
+  const router = useRouter();
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -25,6 +30,9 @@ export default function HomePage() {
 
   return (
     <main className="flex flex-1 flex-col gap-8">
+      <Suspense fallback={null}>
+        <CodeRedirect />
+      </Suspense>
       <header className="space-y-3">
         <span className="pill">Lado a Lado</span>
         <h1

@@ -183,7 +183,9 @@ export default function ScheduleClient({ schedule, slots, bookings }: Props) {
     }
   };
 
-  const selectedSlot = slotsWithStats.find((slot) => slot.id === selectedSlotId ?? '');
+  const selectedSlot = slotsWithStats.find(
+    (slot) => slot.id === (selectedSlotId ?? '')
+  );
 
   return (
     <main className="flex flex-1 flex-col gap-6">
