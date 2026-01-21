@@ -64,6 +64,7 @@ export default function ScheduleClient({ schedule, slots, bookings }: Props) {
     numberOfPeople: number;
   } | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   const slotsWithStats: SlotWithStats[] = useMemo(() => {
     const peopleBySlot = new Map<string, number>();
@@ -87,9 +88,9 @@ export default function ScheduleClient({ schedule, slots, bookings }: Props) {
 
   // Carrega agendamento salvo no cache do navegador, se existir
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof globalThis.window === 'undefined') return;
     const key = `ladoalado_schedule_booking_${schedule.id}`;
-    const raw = window.localStorage.getItem(key);
+    const raw = globalThis.window.localStorage.getItem(key);
     if (!raw) return;
 
     try {
@@ -155,13 +156,13 @@ export default function ScheduleClient({ schedule, slots, bookings }: Props) {
         return;
       }
 
-      if (typeof window !== 'undefined') {
+      if (typeof globalThis.window !== 'undefined') {
         const bookingToCache = {
           slotId: selectedSlotId,
           visitorName: name.trim(),
           numberOfPeople: people,
         };
-        window.localStorage.setItem(
+        globalThis.window.localStorage.setItem(
           `ladoalado_schedule_booking_${schedule.id}`,
           JSON.stringify(bookingToCache)
         );
@@ -180,6 +181,56 @@ export default function ScheduleClient({ schedule, slots, bookings }: Props) {
       setError('Ocorreu um erro ao se comunicar com o servidor.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCancelBooking = async () => {
+    if (!cachedBooking) return;
+
+    if (!confirm('Tem certeza que deseja cancelar este agendamento?')) {
+      return;
+    }
+
+    setIsCancelling(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/bookings', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slotId: cachedBooking.slotId,
+          visitorName: cachedBooking.visitorName,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message ?? 'Não foi possível cancelar o agendamento.');
+        return;
+      }
+
+      // Remove do localStorage
+      if (typeof globalThis.window !== 'undefined') {
+        globalThis.window.localStorage.removeItem(`ladoalado_schedule_booking_${schedule.id}`);
+      }
+
+      // Limpa o estado
+      setCachedBooking(null);
+      setSelectedSlotId(null);
+      setName('');
+      setPeople(1);
+      setIsEditing(false);
+      setSuccess('Agendamento cancelado com sucesso!');
+
+      // Recarrega os dados da agenda para atualizar números de vagas
+      router.refresh();
+    } catch (err) {
+      console.error(err);
+      setError('Ocorreu um erro ao se comunicar com o servidor.');
+    } finally {
+      setIsCancelling(false);
     }
   };
 
@@ -218,11 +269,17 @@ export default function ScheduleClient({ schedule, slots, bookings }: Props) {
       </header>
 
       {cachedBooking && (
-        <section className="space-y-2">
+        <section className="space-y-3">
           <h2 className="text-sm font-medium">Seu agendamento nesta agenda</h2>
           <div
             className="card"
-            style={{ padding: 10, fontSize: 12, display: 'flex', flexDirection: 'column', gap: 4 }}
+            style={{
+              padding: 16,
+              fontSize: 13,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 12,
+            }}
           >
             {(() => {
               const bookedSlot = slotsWithStats.find(
@@ -233,32 +290,92 @@ export default function ScheduleClient({ schedule, slots, bookings }: Props) {
               }
               return (
                 <>
-                  <p style={{ color: '#333333' }}>
-                    <strong>{cachedBooking.visitorName}</strong>
-                  </p>
-                  <p style={{ color: '#666666' }}>
-                    {formatDate(bookedSlot.date)} às {formatTime(bookedSlot.start_time)}
-                  </p>
-                  <p style={{ color: '#666666' }}>
-                    Duração: {bookedSlot.duration_minutes} minutos
-                  </p>
-                  <p style={{ color: '#666666' }}>
-                    Número de pessoas agendadas: {cachedBooking.numberOfPeople}
-                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <p style={{ color: '#333333', fontSize: 15, fontWeight: 600 }}>
+                      {cachedBooking.visitorName}
+                    </p>
+                  </div>
+                  
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 8,
+                      paddingTop: 8,
+                      borderTop: '1px solid rgba(0, 0, 0, 0.08)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <span style={{ color: '#999999', fontSize: 11, fontWeight: 500 }}>
+                        Data e horário
+                      </span>
+                      <p style={{ color: '#333333', fontSize: 13 }}>
+                        {formatDate(bookedSlot.date)} às {formatTime(bookedSlot.start_time)}
+                      </p>
+                    </div>
+                    
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <span style={{ color: '#999999', fontSize: 11, fontWeight: 500 }}>
+                        Duração
+                      </span>
+                      <p style={{ color: '#333333', fontSize: 13 }}>
+                        {bookedSlot.duration_minutes} minutos
+                      </p>
+                    </div>
+                    
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <span style={{ color: '#999999', fontSize: 11, fontWeight: 500 }}>
+                        Número de pessoas
+                      </span>
+                      <p style={{ color: '#333333', fontSize: 13 }}>
+                        {cachedBooking.numberOfPeople} {cachedBooking.numberOfPeople === 1 ? 'pessoa' : 'pessoas'}
+                      </p>
+                    </div>
+                  </div>
                 </>
               );
             })()}
           </div>
 
           {!isEditing && (
-            <button
-              type="button"
-              className="primary-button"
-              style={{ marginTop: 12 }}
-              onClick={() => setIsEditing(true)}
-            >
-              Mudar agendamento
-            </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <button
+                type="button"
+                className="primary-button"
+                onClick={() => setIsEditing(true)}
+              >
+                Mudar agendamento
+              </button>
+              <button
+                type="button"
+                onClick={handleCancelBooking}
+                disabled={isCancelling}
+                style={{
+                  padding: '10px 16px',
+                  borderRadius: 8,
+                  border: '1px solid rgba(255, 59, 48, 0.3)',
+                  background: 'rgba(255, 59, 48, 0.08)',
+                  color: '#ff3b30',
+                  fontSize: 13,
+                  fontWeight: 500,
+                  cursor: isCancelling ? 'not-allowed' : 'pointer',
+                  opacity: isCancelling ? 0.6 : 1,
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  if (!isCancelling) {
+                    e.currentTarget.style.background = 'rgba(255, 59, 48, 0.15)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isCancelling) {
+                    e.currentTarget.style.background = 'rgba(255, 59, 48, 0.08)';
+                  }
+                }}
+              >
+                {isCancelling ? 'Cancelando...' : 'Cancelar agendamento'}
+              </button>
+            </div>
           )}
         </section>
       )}
@@ -291,9 +408,9 @@ export default function ScheduleClient({ schedule, slots, bookings }: Props) {
                     type="button"
                     onClick={() => setSelectedSlotId(slot.id)}
                     disabled={isFull}
-                    className={`flex items-center justify-between px-3 py-2 text-left text-xs ${
-                      isSelected ? 'card' : 'card'
-                    } ${isFull ? 'opacity-60' : ''}`}
+                    className={`flex items-center justify-between px-3 py-2 text-left text-xs card ${
+                      isFull ? 'opacity-60' : ''
+                    }`}
                     style={{
                       background: isSelected
                         ? 'linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,111,97,0.12))'
@@ -325,9 +442,9 @@ export default function ScheduleClient({ schedule, slots, bookings }: Props) {
       {(!cachedBooking || isEditing) && (
       <section className="space-y-3">
         <h2 className="text-sm font-medium">Dados do visitante</h2>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium" htmlFor="name">
+        <form onSubmit={handleSubmit} className="flex flex-col" style={{ gap: 56 }}>
+          <div className="flex flex-col" style={{ gap: 12 }}>
+            <label className="text-xs font-medium" htmlFor="name" style={{ marginBottom: 8 }}>
               Seu nome completo
             </label>
             <input
@@ -339,8 +456,8 @@ export default function ScheduleClient({ schedule, slots, bookings }: Props) {
             />
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium" htmlFor="people">
+          <div className="flex flex-col" style={{ gap: 12 }}>
+            <label className="text-xs font-medium" htmlFor="people" style={{ marginBottom: 8 }}>
               Número total de pessoas na visita
             </label>
             <input
@@ -355,7 +472,7 @@ export default function ScheduleClient({ schedule, slots, bookings }: Props) {
           </div>
 
           {selectedSlot ? (
-            <p className="text-[11px]" style={{ color: '#666666' }}>
+            <p className="text-[11px]" style={{ color: '#666666', marginTop: 8 }}>
               Você selecionou:{' '}
               <span className="font-medium">
                 {formatDate(selectedSlot.date)} às {formatTime(selectedSlot.start_time)}
@@ -363,7 +480,7 @@ export default function ScheduleClient({ schedule, slots, bookings }: Props) {
               .
             </p>
           ) : (
-            <p className="text-[11px]" style={{ color: '#666666' }}>
+            <p className="text-[11px]" style={{ color: '#666666', marginTop: 8 }}>
               Selecione um horário na lista acima para continuar.
             </p>
           )}

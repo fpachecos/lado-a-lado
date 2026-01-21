@@ -13,3 +13,16 @@ web-build/
 .env
 .env.local
 
+# Next.js
+.next/
+out/
+build/
+*.tsbuildinfo
+.next/cache/
+
+# Next.js
+web/.next/
+web/out/
+web/build/
+web/*.tsbuildinfo
+web/.next/cache/

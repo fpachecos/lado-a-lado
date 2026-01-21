@@ -176,4 +176,70 @@ export async function POST(request: Request) {
   }
 }
 
+// DELETE: cancela um agendamento
+export async function DELETE(request: Request) {
+  try {
+    const body = await request.json();
+    const { slotId, visitorName }: { slotId?: string; visitorName?: string } = body;
+
+    if (!slotId || !visitorName) {
+      return NextResponse.json(
+        { message: 'Dados incompletos para cancelar agendamento.' },
+        { status: 400 }
+      );
+    }
+
+    const cleanedName = String(visitorName).trim();
+
+    if (!cleanedName) {
+      return NextResponse.json({ message: 'Nome inválido.' }, { status: 400 });
+    }
+
+    // Buscar o agendamento específico pelo slot_id e visitor_name
+    const { data: booking, error: findError } = await supabase
+      .from('visit_bookings')
+      .select('id')
+      .eq('slot_id', slotId)
+      .ilike('visitor_name', cleanedName)
+      .maybeSingle();
+
+    if (findError) {
+      console.error(findError);
+      return NextResponse.json(
+        { message: 'Erro ao localizar o agendamento.' },
+        { status: 500 }
+      );
+    }
+
+    if (!booking) {
+      return NextResponse.json(
+        { message: 'Agendamento não encontrado.' },
+        { status: 404 }
+      );
+    }
+
+    // Deletar o agendamento
+    const { error: deleteError } = await supabase
+      .from('visit_bookings')
+      .delete()
+      .eq('id', booking.id);
+
+    if (deleteError) {
+      console.error(deleteError);
+      return NextResponse.json(
+        { message: 'Erro ao cancelar o agendamento.' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json(
+      { message: 'Erro inesperado ao cancelar o agendamento.' },
+      { status: 500 }
+    );
+  }
+}
+
 
