@@ -338,7 +338,7 @@ export default function ScheduleClient({ schedule, slots, bookings }: Props) {
           </div>
 
           {!isEditing && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 16 }}>
               <button
                 type="button"
                 className="primary-button"
@@ -351,13 +351,13 @@ export default function ScheduleClient({ schedule, slots, bookings }: Props) {
                 onClick={handleCancelBooking}
                 disabled={isCancelling}
                 style={{
-                  padding: '10px 16px',
-                  borderRadius: 8,
+                  padding: '10px 18px',
+                  borderRadius: 999,
                   border: '1px solid rgba(255, 59, 48, 0.3)',
                   background: 'rgba(255, 59, 48, 0.08)',
                   color: '#ff3b30',
-                  fontSize: 13,
-                  fontWeight: 500,
+                  fontSize: 14,
+                  fontWeight: 600,
                   cursor: isCancelling ? 'not-allowed' : 'pointer',
                   opacity: isCancelling ? 0.6 : 1,
                   transition: 'all 0.2s',

@@ -16,7 +16,8 @@
       "bundleIdentifier": "com.ladoalado.app",
       "buildNumber": "1.0.0",
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "Este app precisa acessar suas fotos para personalizar o perfil."
+        "NSPhotoLibraryUsageDescription": "Este app precisa acessar suas fotos para personalizar o perfil.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -43,8 +44,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "your-project-id"
+        "projectId": "83465b01-e14b-42b7-bf57-32195c6dd1c8"
       }
-    }
+    },
+    "owner": "fpachecosouza"
   }
 }
