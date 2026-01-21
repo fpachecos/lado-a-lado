@@ -1,0 +1,104 @@
+/*!*************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[13].oneOf[10].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[13].oneOf[10].use[3]!./app/globals.css ***!
+  \*************************************************************************************************************************************************************************************************************************************************************/
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  background: radial-gradient(circle at top, #ffe2cf 0, #f4e4bc 35%, #f0d59c 70%, #f2c58a 100%);
+  color: #333333;
+}
+
+button {
+  cursor: pointer;
+}
+
+input,
+button {
+  font-family: inherit;
+}
+
+.card {
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow: none;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  -webkit-backdrop-filter: blur(20px);
+          backdrop-filter: blur(20px);
+}
+
+.pill {
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  font-size: 11px;
+}
+
+.primary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  background: linear-gradient(135deg, #ff8a73, #ff6f61);
+  color: #fafafa;
+  box-shadow: none;
+  transition: transform 0.1s ease, filter 0.15s ease;
+}
+
+.primary-button:hover {
+  filter: brightness(1.03);
+  transform: translateY(-1px);
+}
+
+.primary-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.ghost-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.4);
+  color: #333333;
+}
+
+.input {
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.9);
+  padding: 10px 12px;
+  font-size: 14px;
+  outline: none;
+}
+
+.input:focus {
+  border-color: #ff6f61;
+  box-shadow: 0 0 0 1px rgba(255, 111, 97, 0.4);
+}
+
+
+
+
