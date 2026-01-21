@@ -21,7 +21,7 @@ build/
 .next/cache/
 
 # Next.js
-web/.next/
+web/.next
 web/out/
 web/build/
 web/*.tsbuildinfo
