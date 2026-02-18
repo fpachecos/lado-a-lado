@@ -15,7 +15,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             minHeight: '100vh',
             display: 'flex',
             justifyContent: 'center',
-            padding: '32px 16px',
+            padding: '32px 16px 72px',
           }}
         >
           <div
@@ -32,6 +32,17 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             {children}
           </div>
         </div>
+        <footer className="footer-bar">
+          <div className="footer-content">
+            <a
+              href="/privacy"
+            >
+              Política de Privacidade
+            </a>
+            <span aria-hidden="true">•</span>
+            <a href="mailto:fpachecosouza@icloud.com">Suporte</a>
+          </div>
+        </footer>
       </body>
     </html>
   );
