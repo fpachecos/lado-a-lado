@@ -39,7 +39,7 @@ export default function ScheduleDetailScreen() {
   const handleCopyId = async () => {
     if (!schedule?.id) return;
     try {
-      await Clipboard.setStringAsync(schedule.id);
+      await Clipboard.setStringAsync("https://lado-a-lado.vercel.app/schedule/" + schedule.id);
       Alert.alert('Copiado', 'Código da agenda copiado para a área de transferência.');
     } catch {
       Alert.alert('Erro', 'Não foi possível copiar o código.');
