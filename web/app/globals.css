@@ -1,3 +1,99 @@
+/* ============================================================
+   CSS Custom Properties — Design Tokens
+   ============================================================ */
+
+:root {
+  --primary: #ff6f61;
+  --primary-light: #ff8a73;
+  --primary-gradient: linear-gradient(135deg, #ff8a73, #ff6f61);
+  --primary-focus: rgba(255, 111, 97, 0.4);
+
+  --bg: radial-gradient(circle at top, #ffe2cf 0, #f4e4bc 35%, #f0d59c 70%, #f2c58a 100%);
+
+  --text: #333333;
+  --text-secondary: #666666;
+  --text-footer: #444444;
+
+  --card-bg: rgba(255, 255, 255, 0.7);
+  --card-border: rgba(255, 255, 255, 0.5);
+
+  --input-bg: rgba(255, 255, 255, 0.9);
+  --input-border: rgba(255, 255, 255, 0.8);
+
+  --footer-bg: rgba(255, 255, 255, 0.9);
+  --footer-border: rgba(255, 255, 255, 0.8);
+
+  --pill-bg: rgba(255, 255, 255, 0.7);
+  --pill-border: rgba(255, 255, 255, 0.6);
+
+  --ghost-bg: rgba(255, 255, 255, 0.4);
+  --ghost-border: rgba(255, 255, 255, 0.7);
+}
+
+/* ============================================================
+   Dark Mode
+   ============================================================ */
+
+[data-theme="dark"] {
+  --primary: #ff7a6d;
+  --primary-light: #ff9484;
+  --primary-gradient: linear-gradient(135deg, #ff9484, #ff7a6d);
+  --primary-focus: rgba(255, 122, 109, 0.35);
+
+  --bg: radial-gradient(circle at top, #2d1f18 0, #221a10 35%, #1a140a 70%, #1c1208 100%);
+
+  --text: #f0e8d8;
+  --text-secondary: #9a8870;
+  --text-footer: #b0987a;
+
+  --card-bg: rgba(35, 28, 18, 0.85);
+  --card-border: rgba(255, 255, 255, 0.1);
+
+  --input-bg: rgba(45, 36, 22, 0.95);
+  --input-border: rgba(255, 255, 255, 0.15);
+
+  --footer-bg: rgba(20, 16, 8, 0.95);
+  --footer-border: rgba(255, 255, 255, 0.08);
+
+  --pill-bg: rgba(60, 48, 30, 0.7);
+  --pill-border: rgba(255, 255, 255, 0.1);
+
+  --ghost-bg: rgba(255, 255, 255, 0.06);
+  --ghost-border: rgba(255, 255, 255, 0.15);
+}
+
+/* ============================================================
+   Modos de Daltonismo — apenas a cor primária muda
+   ============================================================ */
+
+/* Protanopia — dificuldade com vermelho → azul */
+[data-colorblind="protanopia"] {
+  --primary: #1565C0;
+  --primary-light: #1976D2;
+  --primary-gradient: linear-gradient(135deg, #1976D2, #1565C0);
+  --primary-focus: rgba(21, 101, 192, 0.4);
+}
+
+/* Deuteranopia — dificuldade com verde → azul-marinho */
+[data-colorblind="deuteranopia"] {
+  --primary: #01579B;
+  --primary-light: #0277BD;
+  --primary-gradient: linear-gradient(135deg, #0277BD, #01579B);
+  --primary-focus: rgba(1, 87, 155, 0.4);
+}
+
+/* Tritanopia — dificuldade com azul → verde-esmeralda */
+[data-colorblind="tritanopia"] {
+  --primary: #00695C;
+  --primary-light: #00897B;
+  --primary-gradient: linear-gradient(135deg, #00897B, #00695C);
+  --primary-focus: rgba(0, 105, 92, 0.4);
+}
+
+/* ============================================================
+   Base
+   ============================================================ */
+
 *,
 *::before,
 *::after {
@@ -12,9 +108,14 @@ body {
 
 body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
-  background: radial-gradient(circle at top, #ffe2cf 0, #f4e4bc 35%, #f0d59c 70%, #f2c58a 100%);
-  color: #333333;
+  background: var(--bg);
+  color: var(--text);
+  transition: background 0.3s ease, color 0.2s ease;
 }
+
+/* ============================================================
+   Components
+   ============================================================ */
 
 .footer-bar {
   position: fixed;
@@ -22,8 +123,8 @@ body {
   left: 0;
   width: 100%;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.9);
-  border-top: 1px solid rgba(255, 255, 255, 0.8);
+  background: var(--footer-bg);
+  border-top: 1px solid var(--footer-border);
   backdrop-filter: blur(16px);
   display: flex;
   justify-content: center;
@@ -35,7 +136,7 @@ body {
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: #444444;
+  color: var(--text-footer);
 }
 
 .footer-content a {
@@ -55,18 +156,19 @@ button {
 
 .card {
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.7);
+  background: var(--card-bg);
   box-shadow: none;
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--card-border);
   backdrop-filter: blur(20px);
 }
 
 .pill {
   border-radius: 999px;
   padding: 4px 10px;
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  background: var(--pill-bg);
+  border: 1px solid var(--pill-border);
   font-size: 11px;
+  color: var(--text);
 }
 
 .primary-button {
@@ -78,14 +180,14 @@ button {
   font-size: 14px;
   font-weight: 600;
   border: none;
-  background: linear-gradient(135deg, #ff8a73, #ff6f61);
+  background: var(--primary-gradient);
   color: #fafafa;
   box-shadow: none;
   transition: transform 0.1s ease, filter 0.15s ease;
 }
 
 .primary-button:hover {
-  filter: brightness(1.03);
+  filter: brightness(1.06);
   transform: translateY(-1px);
 }
 
@@ -104,24 +206,22 @@ button {
   padding: 8px 14px;
   font-size: 13px;
   font-weight: 500;
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  background: rgba(255, 255, 255, 0.4);
-  color: #333333;
+  border: 1px solid var(--ghost-border);
+  background: var(--ghost-bg);
+  color: var(--text);
 }
 
 .input {
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--text);
   padding: 10px 12px;
   font-size: 14px;
   outline: none;
 }
 
 .input:focus {
-  border-color: #ff6f61;
-  box-shadow: 0 0 0 1px rgba(255, 111, 97, 0.4);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary-focus);
 }
-
-
-
