@@ -3,19 +3,18 @@ import { Platform } from 'react-native';
 
 const REVENUECAT_API_KEY_IOS = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_IOS || '';
 
+// Temporário: desativa a verificação de premium e libera todas as funcionalidades para todos os usuários.
+// Problema: marketplace da Apple com assinaturas. Para reverter, mude para `false`.
+const PREMIUM_OVERRIDE = true;
+
 export const initializeRevenueCat = async () => {
   if (Platform.OS === 'ios') {
     const configuration = {
       apiKey: REVENUECAT_API_KEY_IOS,
     };
     
+    Purchases.setLogLevel(Purchases.LOG_LEVEL.DEBUG);
     await Purchases.configure(configuration);
-    
-    // Habilitar logs detalhados em desenvolvimento para verificar sandbox
-    if (__DEV__) {
-      Purchases.setLogLevel(Purchases.LOG_LEVEL.DEBUG);
-      console.log('Note: Sandbox is automatically detected when using App Store sandbox test accounts');
-    }
   }
 };
 
@@ -40,6 +39,7 @@ export const getCustomerInfo = async (): Promise<CustomerInfo | null> => {
 };
 
 export const isPremiumUser = async (): Promise<boolean> => {
+  if (PREMIUM_OVERRIDE) return true;
   try {
     const customerInfo = await getCustomerInfo();
     return customerInfo?.entitlements.active['premium'] !== undefined;
