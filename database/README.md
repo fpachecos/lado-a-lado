@@ -1,34 +1,49 @@
 # Scripts de Banco de Dados
 
-Este diretório contém os scripts SQL necessários para configurar o banco de dados no Supabase.
+Este diretório contém os scripts SQL necessários para configurar e evoluir o banco de dados no Supabase.
 
 ## Ordem de Execução
 
-1. **schema.sql** - Execute primeiro. Cria todas as tabelas, índices, triggers e políticas RLS.
+Execute os scripts nesta ordem em bancos novos:
 
-2. **trigger_no_overlap.sql** - Execute após o schema.sql. Adiciona a validação de sobreposição de slots.
-
-3. **migration_remove_profiles.sql** - Execute se você já tem a estrutura antiga com a tabela profiles. Remove a tabela profiles e atualiza as referências para usar auth.users diretamente.
+1. **schema.sql** — Schema base: tabelas, índices, triggers de `updated_at` e políticas RLS.
+2. **trigger_no_overlap.sql** — Trigger que impede sobreposição de slots no mesmo dia/horário.
+3. **migration_add_schedule_name.sql** — Adiciona a coluna `name` à tabela `visit_schedules`.
 
 ## Como Executar
 
-1. Acesse o Supabase Dashboard
-2. Vá em SQL Editor
-3. Cole e execute cada script na ordem mencionada acima
-4. Verifique se não há erros
+1. Acesse o [Supabase Dashboard](https://supabase.com/dashboard)
+2. Vá em **SQL Editor**
+3. Cole e execute cada script na ordem acima
+4. Verifique se não há erros antes de prosseguir
 
-## Notas Importantes
+## Criando Novas Migrações
 
-- Os scripts são incrementais e seguros para executar múltiplas vezes (usam `IF NOT EXISTS`)
-- As políticas RLS garantem que cada usuário só acesse seus próprios dados
-- O trigger de sobreposição previne slots conflitantes no mesmo dia e horário
+**Nunca edite o `schema.sql`** para refletir mudanças futuras — ele representa o estado inicial.
+
+Toda alteração nova deve ser um arquivo separado `migration_<descricao>.sql`. Use `/db-migration` no Claude Code para criar migrations com o padrão correto automaticamente.
+
+### Regras
+
+- Toda migration deve ser **idempotente** (segura para executar múltiplas vezes)
+- Toda migration deve ser **retro-compatível** (não pode quebrar dados ou código existente)
+- Novas colunas devem ser `NULLABLE` ou ter `DEFAULT` para não quebrar INSERTs existentes
+- Após criar o arquivo, adicione-o na lista acima na ordem correta
 
 ## Estrutura das Tabelas
 
-- `ladoalado.babies` - Informações dos bebês (referencia auth.users diretamente)
-- `ladoalado.visit_schedules` - Agendas de visitas (referencia auth.users diretamente)
-- `ladoalado.visit_slots` - Slots de horários
-- `ladoalado.visit_bookings` - Agendamentos confirmados
+| Tabela | Descrição |
+|---|---|
+| `ladoalado.babies` | Informações dos bebês, referencia `auth.users` diretamente |
+| `ladoalado.visit_schedules` | Agendas de visitas, com `name`, `start_date`, `end_date`, `custom_message` |
+| `ladoalado.visit_slots` | Slots de horário dentro de uma agenda |
+| `ladoalado.visit_bookings` | Agendamentos confirmados por visitantes |
 
-**Nota:** A autenticação é gerenciada pelo Supabase Auth (`auth.users`). Não há mais a tabela `profiles`.
+**Autenticação:** gerenciada pelo Supabase Auth (`auth.users`). Não há tabela `profiles`.
+
+## Políticas RLS Relevantes
+
+- `visit_schedules`: acesso público de SELECT (`USING (true)`) — usado pela web sem autenticação
+- `visit_slots`: acesso público de SELECT — usado pela web sem autenticação
+- `visit_bookings`: INSERT, SELECT e DELETE públicos — visitantes podem agendar e cancelar sem login
 
