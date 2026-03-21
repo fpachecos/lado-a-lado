@@ -47,3 +47,20 @@ export interface VisitBooking {
   updated_at: string;
 }
 
+export interface Companion {
+  id: string;
+  user_id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CompanionActivity {
+  id: string;
+  companion_id: string;
+  content: string;
+  position: number;
+  created_at: string;
+  updated_at: string;
+}
+

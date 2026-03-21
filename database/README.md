@@ -9,6 +9,7 @@ Execute os scripts nesta ordem em bancos novos:
 1. **schema.sql** — Schema base: tabelas, índices, triggers de `updated_at` e políticas RLS.
 2. **trigger_no_overlap.sql** — Trigger que impede sobreposição de slots no mesmo dia/horário.
 3. **migration_add_schedule_name.sql** — Adiciona a coluna `name` à tabela `visit_schedules`.
+4. **migration_companions.sql** — Cria as tabelas `companions` e `companion_activities` com RLS e triggers.
 
 ## Como Executar
 
@@ -38,6 +39,8 @@ Toda alteração nova deve ser um arquivo separado `migration_<descricao>.sql`. 
 | `ladoalado.visit_schedules` | Agendas de visitas, com `name`, `start_date`, `end_date`, `custom_message` |
 | `ladoalado.visit_slots` | Slots de horário dentro de uma agenda |
 | `ladoalado.visit_bookings` | Agendamentos confirmados por visitantes |
+| `ladoalado.companions` | Acompanhantes cadastrados pelos usuários |
+| `ladoalado.companion_activities` | Atividades (markdown) associadas a cada acompanhante |
 
 **Autenticação:** gerenciada pelo Supabase Auth (`auth.users`). Não há tabela `profiles`.
 
