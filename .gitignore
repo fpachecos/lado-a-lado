@@ -31,3 +31,6 @@ web/out/
 web/build/
 web/*.tsbuildinfo
 web/.next/cache/
+
+# Supabase local
+supabase/
