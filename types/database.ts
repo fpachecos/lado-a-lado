@@ -60,6 +60,7 @@ export interface CompanionActivity {
   companion_id: string;
   content: string;
   position: number;
+  completed: boolean;
   created_at: string;
   updated_at: string;
 }

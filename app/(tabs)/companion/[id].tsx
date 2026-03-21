@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Alert,
   ScrollView,
+  KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -100,7 +101,11 @@ export default function CompanionEditScreen() {
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.keyboardAvoidingView}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+    <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)')}
@@ -137,13 +142,17 @@ export default function CompanionEditScreen() {
         </View>
       </View>
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  keyboardAvoidingView: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  container: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
