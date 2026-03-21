@@ -16,7 +16,6 @@ npm-debug.*
 web-build/
 .env
 .env.local
-eas.json
 
 # Next.js
 .next/
