@@ -40,6 +40,8 @@ export default function MainLayout() {
       <Stack.Screen name="baby" />
       <Stack.Screen name="schedules" />
       <Stack.Screen name="visits" />
+      <Stack.Screen name="companion" />
+      <Stack.Screen name="companion-activities" />
     </Stack>
   );
 }
