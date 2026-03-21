@@ -333,22 +333,22 @@ export default function HomeScreen() {
               onPress={() => {
                 setShowCompanionMenu(false);
                 if (selectedCompanion) {
-                  router.push(`/(tabs)/companion/${selectedCompanion.id}`);
+                  router.push(`/(tabs)/companion-activities/${selectedCompanion.id}`);
                 }
               }}
             >
-              <Text style={styles.menuItemText}>Editar Acompanhante</Text>
+              <Text style={styles.menuItemText}>Atividades</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.menuItem}
               onPress={() => {
                 setShowCompanionMenu(false);
                 if (selectedCompanion) {
-                  router.push(`/(tabs)/companion-activities/${selectedCompanion.id}`);
+                  router.push(`/(tabs)/companion/${selectedCompanion.id}`);
                 }
               }}
             >
-              <Text style={styles.menuItemText}>Atividades</Text>
+              <Text style={styles.menuItemText}>Editar Acompanhante</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.menuItem, styles.menuItemDanger]}
