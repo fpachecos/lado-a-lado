@@ -25,6 +25,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="pt-BR" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,300;1,9..144,400&family=Nunito:wght@400;500;600;700;800&display=swap"
+          rel="stylesheet"
+        />
       </head>
       <body>
         <ThemeProvider>
@@ -34,18 +40,18 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               minHeight: '100vh',
               display: 'flex',
               justifyContent: 'center',
-              padding: '32px 16px 72px',
+              padding: '36px 16px 80px',
             }}
           >
             <div
               className="card"
               style={{
                 width: '100%',
-                maxWidth: 640,
-                padding: 24,
+                maxWidth: 620,
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 24,
+                overflow: 'hidden',
+                padding: 0,
               }}
             >
               {children}
@@ -54,7 +60,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <footer className="footer-bar">
             <div className="footer-content">
               <a href="/privacy">Política de Privacidade</a>
-              <span aria-hidden="true">•</span>
+              <span aria-hidden="true">·</span>
               <a href="mailto:fpachecosouza@icloud.com">Suporte</a>
             </div>
           </footer>

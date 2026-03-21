@@ -23,10 +23,7 @@ export default function HomeScreen() {
   const [isPremium, setIsPremium] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Menu do bebê
   const [showBabyMenu, setShowBabyMenu] = useState(false);
-
-  // Menu do acompanhante selecionado
   const [selectedCompanion, setSelectedCompanion] = useState<Companion | null>(null);
   const [showCompanionMenu, setShowCompanionMenu] = useState(false);
 
@@ -177,45 +174,61 @@ export default function HomeScreen() {
   if (loading) {
     return (
       <View style={styles.container}>
-        <Text style={styles.loadingText}>Carregando...</Text>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Carregando...</Text>
+        </View>
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Lado a Lado</Text>
+        <View>
+          <Text style={styles.headerEyebrow}>Bem-vindo ao</Text>
+          <Text style={styles.title}>Lado a Lado</Text>
+        </View>
         <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
           <Text style={styles.logoutText}>Sair</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.content}>
+
         {/* Card do bebê */}
         {baby ? (
-          <View style={styles.babyCard}>
-            <View style={styles.cardHeader}>
-              <View style={styles.cardContent}>
-                <Text style={styles.cardLabel}>Informações do Bebê</Text>
-                <Text style={styles.cardName}>{baby.name || 'Sem nome'}</Text>
+          <TouchableOpacity
+            style={styles.babyCard}
+            activeOpacity={0.92}
+            onPress={() => setShowBabyMenu(true)}
+          >
+            <View style={styles.babyCardTop}>
+              <View style={styles.babyAvatarContainer}>
+                <Text style={styles.babyAvatarEmoji}>
+                  {baby.gender === 'male' ? '👶' : baby.gender === 'female' ? '👧' : '🍼'}
+                </Text>
+              </View>
+              <View style={styles.babyCardContent}>
+                <Text style={styles.cardLabel}>Bebê</Text>
+                <Text style={styles.babyName}>{baby.name || 'Sem nome'}</Text>
                 {baby.gender && (
-                  <Text style={styles.cardSub}>
-                    {baby.gender === 'male' ? '👶 Menino' : '👶 Menina'}
+                  <Text style={styles.babyGender}>
+                    {baby.gender === 'male' ? 'Menino' : 'Menina'}
                   </Text>
                 )}
               </View>
-              <TouchableOpacity
-                style={styles.menuButton}
-                onPress={() => setShowBabyMenu(true)}
-              >
+              <View style={styles.menuButton}>
                 <Text style={styles.menuButtonText}>⋯</Text>
-              </TouchableOpacity>
+              </View>
             </View>
-          </View>
+          </TouchableOpacity>
         ) : (
           <View style={styles.babyCard}>
             <Text style={styles.cardLabel}>Cadastre seu bebê</Text>
+            <Text style={styles.emptyCardText}>
+              Adicione as informações do bebê para começar a criar agendas de visitas.
+            </Text>
             <TouchableOpacity
               style={styles.primaryButton}
               onPress={() => router.push('/(tabs)/baby')}
@@ -225,44 +238,61 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* Cards de acompanhantes */}
-        {companions.map(companion => (
-          <View key={companion.id} style={styles.companionCard}>
-            <View style={styles.cardHeader}>
-              <View style={styles.cardContent}>
-                <Text style={styles.cardLabel}>Acompanhante</Text>
-                <Text style={styles.cardName}>{companion.name}</Text>
-              </View>
-              <TouchableOpacity
-                style={styles.menuButton}
-                onPress={() => {
-                  setSelectedCompanion(companion);
-                  setShowCompanionMenu(true);
-                }}
-              >
-                <Text style={styles.menuButtonText}>⋯</Text>
-              </TouchableOpacity>
-            </View>
+        {/* Seção de acompanhantes */}
+        {(companions.length > 0 || true) && (
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionLabel}>Acompanhantes</Text>
           </View>
+        )}
+
+        {companions.map(companion => (
+          <TouchableOpacity
+            key={companion.id}
+            style={styles.companionCard}
+            activeOpacity={0.88}
+            onPress={() => {
+              setSelectedCompanion(companion);
+              setShowCompanionMenu(true);
+            }}
+          >
+            <View style={styles.companionAvatar}>
+              <Text style={styles.companionAvatarText}>
+                {companion.name.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+            <View style={styles.companionInfo}>
+              <Text style={styles.companionName}>{companion.name}</Text>
+              <Text style={styles.companionSub}>Acompanhante</Text>
+            </View>
+            <Text style={styles.menuButtonText}>⋯</Text>
+          </TouchableOpacity>
         ))}
 
         {/* Botão adicionar acompanhante */}
         <TouchableOpacity
           style={styles.addCompanionButton}
           onPress={() => router.push('/(tabs)/companion/new')}
+          activeOpacity={0.7}
         >
-          <Text style={styles.addCompanionText}>+ Adicionar Acompanhante</Text>
+          <Text style={styles.addCompanionPlus}>+</Text>
+          <Text style={styles.addCompanionText}>Adicionar Acompanhante</Text>
         </TouchableOpacity>
 
+        {/* Card premium */}
         {!isPremium && (
           <View style={styles.premiumCard}>
-            <Text style={styles.premiumTitle}>Upgrade para Premium</Text>
-            <Text style={styles.premiumText}>Crie agendas com múltiplos dias</Text>
+            <View style={styles.premiumBadge}>
+              <Text style={styles.premiumBadgeText}>PREMIUM</Text>
+            </View>
+            <Text style={styles.premiumTitle}>Agendas de múltiplos dias</Text>
+            <Text style={styles.premiumText}>
+              Crie agendas com vários dias de visita para cada acompanhante.
+            </Text>
             <TouchableOpacity style={styles.premiumButton} onPress={handlePurchase}>
-              <Text style={styles.premiumButtonText}>Assinar</Text>
+              <Text style={styles.premiumButtonText}>Assinar agora</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.restoreButton} onPress={handleRestorePurchases}>
-              <Text style={styles.restoreButtonText}>Restaurar Compras</Text>
+              <Text style={styles.restoreButtonText}>Restaurar compras</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -281,29 +311,30 @@ export default function HomeScreen() {
           onPress={() => setShowBabyMenu(false)}
         >
           <BlurView intensity={80} tint="light" style={styles.menuContent}>
+            <View style={styles.menuHandle} />
             <TouchableOpacity
               style={styles.menuItem}
               onPress={() => { setShowBabyMenu(false); router.push('/(tabs)/baby'); }}
             >
-              <Text style={styles.menuItemText}>Editar Bebê</Text>
+              <Text style={styles.menuItemText}>Editar informações do bebê</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.menuItem}
               onPress={() => { setShowBabyMenu(false); router.push('/(tabs)/schedules/new'); }}
             >
-              <Text style={styles.menuItemText}>Criar Agenda de Visitas</Text>
+              <Text style={styles.menuItemText}>Criar agenda de visitas</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.menuItem}
               onPress={() => { setShowBabyMenu(false); router.push('/(tabs)/schedules'); }}
             >
-              <Text style={styles.menuItemText}>Ver Agendas Existentes</Text>
+              <Text style={styles.menuItemText}>Ver agendas existentes</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.menuItem}
               onPress={() => { setShowBabyMenu(false); router.push('/(tabs)/visits'); }}
             >
-              <Text style={styles.menuItemText}>Acompanhar Visitas</Text>
+              <Text style={styles.menuItemText}>Acompanhar visitas</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.menuItem, styles.menuItemCancel]}
@@ -328,6 +359,7 @@ export default function HomeScreen() {
           onPress={() => setShowCompanionMenu(false)}
         >
           <BlurView intensity={80} tint="light" style={styles.menuContent}>
+            <View style={styles.menuHandle} />
             <TouchableOpacity
               style={styles.menuItem}
               onPress={() => {
@@ -337,7 +369,7 @@ export default function HomeScreen() {
                 }
               }}
             >
-              <Text style={styles.menuItemText}>Atividades</Text>
+              <Text style={styles.menuItemText}>Ver atividades</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.menuItem}
@@ -348,7 +380,7 @@ export default function HomeScreen() {
                 }
               }}
             >
-              <Text style={styles.menuItemText}>Editar Acompanhante</Text>
+              <Text style={styles.menuItemText}>Editar acompanhante</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.menuItem, styles.menuItemDanger]}
@@ -359,7 +391,7 @@ export default function HomeScreen() {
                 }
               }}
             >
-              <Text style={styles.menuItemDangerText}>Excluir Acompanhante</Text>
+              <Text style={styles.menuItemDangerText}>Excluir acompanhante</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.menuItem, styles.menuItemCancel]}
@@ -379,176 +411,340 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 120,
+  },
+  loadingText: {
+    fontSize: 15,
+    color: Colors.textSecondary,
+    fontWeight: '500',
+  },
+
+  // ── Header ──
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
+    alignItems: 'flex-end',
+    paddingHorizontal: 22,
     paddingTop: 60,
-    paddingBottom: 16,
+    paddingBottom: 20,
+  },
+  headerEyebrow: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+    letterSpacing: 0.3,
+    marginBottom: 2,
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
+    fontSize: 34,
+    fontWeight: '800',
     color: Colors.text,
+    letterSpacing: -0.5,
   },
   logoutButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  logoutText: {
-    color: Colors.text,
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  content: {
-    padding: 20,
-  },
-  babyCard: {
-    backgroundColor: Colors.glassBackground,
-    borderRadius: 24,
-    padding: 20,
-    marginBottom: 16,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    backgroundColor: Colors.glass,
     borderWidth: 1,
     borderColor: Colors.glassBorder,
   },
-  companionCard: {
-    backgroundColor: Colors.glassBackground,
+  logoutText: {
+    color: Colors.textSecondary,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+
+  // ── Content ──
+  content: {
+    paddingHorizontal: 18,
+    paddingBottom: 32,
+  },
+
+  // ── Baby Card ──
+  babyCard: {
+    backgroundColor: Colors.cardWarm,
     borderRadius: 24,
     padding: 20,
-    marginBottom: 16,
+    marginBottom: 12,
     borderWidth: 1,
-    borderColor: Colors.secondary + '60',
+    borderColor: Colors.borderWarm,
+    shadowColor: Colors.shadowWarm,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 16,
+    elevation: 3,
   },
-  cardHeader: {
+  babyCardTop: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    gap: 14,
   },
-  cardContent: {
+  babyAvatarContainer: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: Colors.cardPrimary,
+    borderWidth: 1,
+    borderColor: Colors.borderPrimary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  babyAvatarEmoji: {
+    fontSize: 26,
+  },
+  babyCardContent: {
     flex: 1,
   },
   cardLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.textSecondary,
-    marginBottom: 6,
+    fontSize: 11,
+    fontWeight: '800',
+    color: Colors.textTertiary,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 1,
+    marginBottom: 3,
   },
-  cardName: {
+  babyName: {
     fontSize: 22,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: Colors.primary,
-    marginBottom: 4,
+    letterSpacing: -0.3,
+    marginBottom: 1,
   },
-  cardSub: {
-    fontSize: 15,
+  babyGender: {
+    fontSize: 13,
     color: Colors.textSecondary,
+    fontWeight: '500',
   },
-  menuButton: {
-    width: 40,
-    height: 40,
+  emptyCardText: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    lineHeight: 20,
+    marginVertical: 10,
+  },
+
+  // ── Section Header ──
+  sectionHeader: {
+    marginTop: 8,
+    marginBottom: 10,
+    paddingHorizontal: 2,
+  },
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: Colors.textTertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+
+  // ── Companion Card ──
+  companionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    backgroundColor: Colors.cardMint,
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: Colors.borderMint,
+    shadowColor: Colors.shadowWarmLight,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  companionAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.secondary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 12,
   },
-  menuButtonText: {
-    fontSize: 24,
+  companionAvatarText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  companionInfo: {
+    flex: 1,
+  },
+  companionName: {
+    fontSize: 16,
+    fontWeight: '700',
     color: Colors.text,
-    fontWeight: 'bold',
-    lineHeight: 24,
+    letterSpacing: -0.2,
+    marginBottom: 2,
   },
+  companionSub: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    fontWeight: '500',
+  },
+
+  // ── Add Companion ──
   addCompanionButton: {
-    borderRadius: 20,
-    padding: 14,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderRadius: 20,
+    paddingVertical: 13,
     marginBottom: 20,
     borderWidth: 1.5,
     borderColor: Colors.secondary,
     borderStyle: 'dashed',
   },
+  addCompanionPlus: {
+    fontSize: 20,
+    color: Colors.secondary,
+    fontWeight: '700',
+    lineHeight: 22,
+  },
   addCompanionText: {
     color: Colors.secondary,
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '700',
   },
+
+  // ── Primary Button ──
   primaryButton: {
     backgroundColor: Colors.primary,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 6,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 4,
   },
   primaryButtonText: {
-    color: Colors.white,
-    fontSize: 16,
-    fontWeight: '600',
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
+
+  // ── Premium Card ──
   premiumCard: {
     backgroundColor: Colors.glassBackground,
     borderRadius: 24,
-    padding: 20,
+    padding: 22,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: Colors.glassBorder,
+    borderColor: Colors.borderPrimary,
+    shadowColor: Colors.shadowWarm,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 16,
+    elevation: 3,
+  },
+  premiumBadge: {
+    backgroundColor: Colors.cardPrimary,
+    borderRadius: 99,
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: Colors.borderPrimary,
+    marginBottom: 14,
+  },
+  premiumBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: Colors.primary,
+    letterSpacing: 1.2,
   },
   premiumTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: Colors.text,
     marginBottom: 8,
+    letterSpacing: -0.3,
+    textAlign: 'center',
   },
   premiumText: {
     fontSize: 14,
-    color: Colors.text,
-    marginBottom: 16,
+    color: Colors.textSecondary,
+    marginBottom: 20,
     textAlign: 'center',
+    lineHeight: 20,
   },
   premiumButton: {
     backgroundColor: Colors.primary,
-    borderRadius: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+    borderRadius: 99,
+    paddingVertical: 13,
+    paddingHorizontal: 28,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 4,
   },
   premiumButtonText: {
-    color: Colors.white,
-    fontSize: 16,
-    fontWeight: '600',
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
   restoreButton: {
-    marginTop: 12,
-    paddingVertical: 8,
+    marginTop: 14,
+    paddingVertical: 6,
   },
   restoreButtonText: {
-    color: Colors.text,
-    fontSize: 14,
+    color: Colors.textSecondary,
+    fontSize: 13,
+    fontWeight: '500',
     textDecorationLine: 'underline',
   },
-  loadingText: {
-    fontSize: 16,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    marginTop: 40,
-  },
+
+  // ── Menu Overlay ──
   menuOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   menuContent: {
     backgroundColor: Colors.glassDark,
-    borderRadius: 24,
+    borderRadius: 28,
     padding: 8,
-    minWidth: 280,
-    maxWidth: '90%',
+    minWidth: 290,
+    maxWidth: '88%',
     borderWidth: 1,
     borderColor: Colors.glassBorder,
     overflow: 'hidden',
   },
+  menuHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.neutral,
+    alignSelf: 'center',
+    marginBottom: 10,
+    marginTop: 4,
+  },
+  menuButton: {
+    width: 38,
+    height: 38,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  menuButtonText: {
+    fontSize: 22,
+    color: Colors.textSecondary,
+    fontWeight: '600',
+    lineHeight: 24,
+  },
   menuItem: {
-    paddingVertical: 16,
+    paddingVertical: 15,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderBottomColor: Colors.neutral,
@@ -559,7 +755,8 @@ const styles = StyleSheet.create({
   },
   menuItemCancel: {
     borderBottomWidth: 0,
-    marginTop: 8,
+    marginTop: 4,
+    marginBottom: 4,
   },
   menuItemText: {
     fontSize: 16,
@@ -572,8 +769,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   menuItemCancelText: {
-    fontSize: 16,
+    fontSize: 15,
     color: Colors.textSecondary,
     textAlign: 'center',
+    fontWeight: '600',
   },
 });

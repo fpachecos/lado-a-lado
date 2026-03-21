@@ -38,7 +38,6 @@ interface SlotWithStats extends Slot {
 }
 
 function renderMarkdown(text: string): string {
-  // Escape HTML first to prevent XSS
   const escaped = text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -52,11 +51,20 @@ function renderMarkdown(text: string): string {
 }
 
 function formatTime(time: string) {
-  return time.slice(0, 5); // HH:MM
+  return time.slice(0, 5);
 }
 
 function formatDate(date: string) {
-  return new Date(date).toLocaleDateString('pt-BR', {
+  return new Date(date + 'T12:00:00').toLocaleDateString('pt-BR', {
+    weekday: 'short',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+function formatDateShort(date: string) {
+  return new Date(date + 'T12:00:00').toLocaleDateString('pt-BR', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -100,7 +108,6 @@ export default function ScheduleClient({ schedule, slots, bookings }: Props) {
     });
   }, [slots, bookings]);
 
-  // Carrega agendamento salvo no cache do navegador, se existir
   useEffect(() => {
     if (typeof globalThis.window === 'undefined') return;
     const key = `ladoalado_schedule_booking_${schedule.id}`;
@@ -151,7 +158,6 @@ export default function ScheduleClient({ schedule, slots, bookings }: Props) {
           slotId: selectedSlotId,
           visitorName: name.trim(),
           numberOfPeople: people,
-          // Se já temos um agendamento em cache, substituímos direto sem pedir confirmação
           replaceExisting: needsReplaceConfirmation || !!cachedBooking,
         }),
       });
@@ -183,12 +189,10 @@ export default function ScheduleClient({ schedule, slots, bookings }: Props) {
         setCachedBooking(bookingToCache);
       }
 
-      // Volta para o modo de visualização, escondendo lista e formulário
       setIsEditing(false);
       setNeedsReplaceConfirmation(false);
       setSuccess('Agendamento realizado com sucesso!');
 
-      // Recarrega os dados da agenda para atualizar números de vagas
       router.refresh();
     } catch (err) {
       console.error(err);
@@ -225,12 +229,10 @@ export default function ScheduleClient({ schedule, slots, bookings }: Props) {
         return;
       }
 
-      // Remove do localStorage
       if (typeof globalThis.window !== 'undefined') {
         globalThis.window.localStorage.removeItem(`ladoalado_schedule_booking_${schedule.id}`);
       }
 
-      // Limpa o estado
       setCachedBooking(null);
       setSelectedSlotId(null);
       setName('');
@@ -238,7 +240,6 @@ export default function ScheduleClient({ schedule, slots, bookings }: Props) {
       setIsEditing(false);
       setSuccess('Agendamento cancelado com sucesso!');
 
-      // Recarrega os dados da agenda para atualizar números de vagas
       router.refresh();
     } catch (err) {
       console.error(err);
@@ -248,143 +249,89 @@ export default function ScheduleClient({ schedule, slots, bookings }: Props) {
     }
   };
 
-  const selectedSlot = slotsWithStats.find(
-    (slot) => slot.id === (selectedSlotId ?? '')
-  );
+  const selectedSlot = slotsWithStats.find((slot) => slot.id === (selectedSlotId ?? ''));
 
   return (
-    <main className="flex flex-1 flex-col gap-6">
-      <header className="space-y-2">
+    <main className="schedule-page">
+
+      {/* ── Header ── */}
+      <header className="schedule-header">
         <span className="pill">Lado a Lado</span>
-        <h1 className="text-2xl font-semibold" style={{ color: '#333333' }}>
-          Agendamento de Visitas
-        </h1>
-        <p className="text-sm" style={{ color: '#666666' }}>
-          Escolha um horário disponível na agenda para realizar sua visita.
+        <h1 className="schedule-title">Agendamento de Visitas</h1>
+        <p className="schedule-subtitle">
+          Escolha um horário disponível para realizar sua visita.
         </p>
         {schedule.custom_message ? (
           <div
-            className="card"
-            style={{
-              padding: 10,
-              fontSize: 12,
-              background:
-                'linear-gradient(135deg, rgba(255,255,255,0.9), rgba(168,213,186,0.9))',
-              borderColor: 'rgba(168,213,186,0.9)',
-            }}
+            className="custom-message-box"
             dangerouslySetInnerHTML={{ __html: renderMarkdown(schedule.custom_message) }}
           />
         ) : null}
-        <p className="text-xs" style={{ color: '#666666' }}>
-          Período da agenda: {formatDate(schedule.start_date)} até{' '}
-          {formatDate(schedule.end_date)}
+        <p className="schedule-period">
+          Período: {formatDateShort(schedule.start_date)} – {formatDateShort(schedule.end_date)}
         </p>
       </header>
 
+      {/* ── Agendamento existente ── */}
       {cachedBooking && (
-        <section className="space-y-3">
-          <h2 className="text-sm font-medium">Seu agendamento nesta agenda</h2>
-          <div
-            className="card"
-            style={{
-              padding: 16,
-              fontSize: 13,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 12,
-            }}
-          >
-            {(() => {
-              const bookedSlot = slotsWithStats.find(
-                (s) => s.id === cachedBooking.slotId
-              );
-              if (!bookedSlot) {
-                return <p style={{ color: '#666666' }}>Horário não encontrado.</p>;
-              }
+        <section className="schedule-section">
+          <p className="section-label">Seu agendamento</p>
+
+          {(() => {
+            const bookedSlot = slotsWithStats.find((s) => s.id === cachedBooking.slotId);
+            if (!bookedSlot) {
               return (
-                <>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    <p style={{ color: '#333333', fontSize: 15, fontWeight: 600 }}>
-                      {cachedBooking.visitorName}
+                <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                  Horário não encontrado nesta agenda.
+                </p>
+              );
+            }
+            return (
+              <div className="booking-card">
+                <p className="booking-name">{cachedBooking.visitorName}</p>
+                <div className="booking-details">
+                  <div>
+                    <p className="booking-detail-label">Data e horário</p>
+                    <p className="booking-detail-value">
+                      {formatDate(bookedSlot.date)} às {formatTime(bookedSlot.start_time)}
                     </p>
                   </div>
-                  
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 8,
-                      paddingTop: 8,
-                      borderTop: '1px solid rgba(0, 0, 0, 0.08)',
-                    }}
-                  >
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                      <span style={{ color: '#999999', fontSize: 11, fontWeight: 500 }}>
-                        Data e horário
-                      </span>
-                      <p style={{ color: '#333333', fontSize: 13 }}>
-                        {formatDate(bookedSlot.date)} às {formatTime(bookedSlot.start_time)}
-                      </p>
-                    </div>
-                    
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                      <span style={{ color: '#999999', fontSize: 11, fontWeight: 500 }}>
-                        Duração
-                      </span>
-                      <p style={{ color: '#333333', fontSize: 13 }}>
-                        {bookedSlot.duration_minutes} minutos
-                      </p>
-                    </div>
-                    
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                      <span style={{ color: '#999999', fontSize: 11, fontWeight: 500 }}>
-                        Número de pessoas
-                      </span>
-                      <p style={{ color: '#333333', fontSize: 13 }}>
-                        {cachedBooking.numberOfPeople} {cachedBooking.numberOfPeople === 1 ? 'pessoa' : 'pessoas'}
-                      </p>
-                    </div>
+                  <div>
+                    <p className="booking-detail-label">Duração</p>
+                    <p className="booking-detail-value">{bookedSlot.duration_minutes} minutos</p>
                   </div>
-                </>
-              );
-            })()}
-          </div>
+                  <div>
+                    <p className="booking-detail-label">Número de pessoas</p>
+                    <p className="booking-detail-value">
+                      {cachedBooking.numberOfPeople}{' '}
+                      {cachedBooking.numberOfPeople === 1 ? 'pessoa' : 'pessoas'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {success && (
+            <p className="status-success" style={{ marginTop: 12 }}>
+              {success}
+            </p>
+          )}
 
           {!isEditing && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 16 }}>
+            <div className="action-row" style={{ marginTop: 16 }}>
               <button
                 type="button"
                 className="primary-button"
-                onClick={() => setIsEditing(true)}
+                onClick={() => { setIsEditing(true); setSuccess(null); }}
               >
                 Mudar agendamento
               </button>
               <button
                 type="button"
+                className="danger-button"
                 onClick={handleCancelBooking}
                 disabled={isCancelling}
-                style={{
-                  padding: '10px 18px',
-                  borderRadius: 999,
-                  border: '1px solid rgba(255, 59, 48, 0.3)',
-                  background: 'rgba(255, 59, 48, 0.08)',
-                  color: '#ff3b30',
-                  fontSize: 14,
-                  fontWeight: 600,
-                  cursor: isCancelling ? 'not-allowed' : 'pointer',
-                  opacity: isCancelling ? 0.6 : 1,
-                  transition: 'all 0.2s',
-                }}
-                onMouseEnter={(e) => {
-                  if (!isCancelling) {
-                    e.currentTarget.style.background = 'rgba(255, 59, 48, 0.15)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isCancelling) {
-                    e.currentTarget.style.background = 'rgba(255, 59, 48, 0.08)';
-                  }
-                }}
               >
                 {isCancelling ? 'Cancelando...' : 'Cancelar agendamento'}
               </button>
@@ -393,25 +340,17 @@ export default function ScheduleClient({ schedule, slots, bookings }: Props) {
         </section>
       )}
 
+      {/* ── Horários disponíveis ── */}
       {(!cachedBooking || isEditing) && (
-        <section className="space-y-3">
-          <h2 className="text-sm font-medium">Horários disponíveis</h2>
+        <section className="schedule-section">
+          <p className="section-label">Horários disponíveis</p>
+
           {slotsWithStats.length === 0 ? (
-            <p className="text-sm" style={{ color: '#666666' }}>
+            <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
               Nenhum horário disponível nesta agenda no momento.
             </p>
           ) : (
-            <div
-              className="card"
-              style={{
-                maxHeight: 320,
-                padding: 8,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 8,
-                overflowY: 'auto',
-              }}
-            >
+            <div className="slot-list">
               {slotsWithStats.map((slot) => {
                 const isFull = slot.remaining_spots <= 0;
                 const isSelected = slot.id === selectedSlotId;
@@ -421,29 +360,19 @@ export default function ScheduleClient({ schedule, slots, bookings }: Props) {
                     type="button"
                     onClick={() => setSelectedSlotId(slot.id)}
                     disabled={isFull}
-                    className={`flex items-center justify-between px-3 py-2 text-left text-xs card ${
-                      isFull ? 'opacity-60' : ''
-                    }`}
-                    style={{
-                      background: isSelected
-                        ? 'linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,111,97,0.12))'
-                        : 'rgba(255,255,255,0.8)',
-                      borderColor: isSelected ? '#ff6f61' : 'rgba(255,255,255,0.8)',
-                    }}
+                    className={`slot-card${isSelected ? ' slot-card--selected' : ''}${isFull ? ' slot-card--full' : ''}`}
                   >
                     <div>
-                      <div className="font-medium" style={{ color: '#333333' }}>
-                        {formatDate(slot.date)} às {formatTime(slot.start_time)}
-                      </div>
-                      <div className="mt-0.5 text-[11px]" style={{ color: '#666666' }}>
-                        Duração aproximada: {slot.duration_minutes} minutos
-                      </div>
+                      <p className="slot-time">
+                        {formatDate(slot.date)} · {formatTime(slot.start_time)}
+                      </p>
+                      <p className="slot-duration">{slot.duration_minutes} min de duração</p>
                     </div>
-                    <div className="text-right text-[11px]" style={{ color: '#666666' }}>
+                    <p className={`slot-spots${isFull ? ' slot-spots--full' : ' slot-spots--available'}`}>
                       {isFull
                         ? 'Lotado'
-                        : `${slot.remaining_spots} vaga(s) restante(s) de ${slot.max_people}`}
-                    </div>
+                        : `${slot.remaining_spots} de ${slot.max_people} vaga${slot.remaining_spots === 1 ? '' : 's'}`}
+                    </p>
                   </button>
                 );
               })}
@@ -452,103 +381,84 @@ export default function ScheduleClient({ schedule, slots, bookings }: Props) {
         </section>
       )}
 
+      {/* ── Formulário ── */}
       {(!cachedBooking || isEditing) && (
-      <section className="space-y-3">
-        <h2 className="text-sm font-medium">Dados do visitante</h2>
-        <form onSubmit={handleSubmit} className="flex flex-col" style={{ gap: 56 }}>
-          <div className="flex flex-col" style={{ gap: 12 }}>
-            <label className="text-xs font-medium" htmlFor="name" style={{ marginBottom: 8 }}>
-              Seu nome completo
-            </label>
-            <input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="input"
-              placeholder="Ex: Maria Silva"
-            />
-          </div>
+        <section className="schedule-section">
+          <p className="section-label">Dados do visitante</p>
 
-          <div className="flex flex-col" style={{ gap: 12 }}>
-            <label className="text-xs font-medium" htmlFor="people" style={{ marginBottom: 8 }}>
-              Número total de pessoas na visita
-            </label>
-            <input
-              id="people"
-              type="number"
-              min={1}
-              value={people}
-              onChange={(e) => setPeople(Number(e.target.value) || 1)}
-              className="input"
-              style={{ width: 120 }}
-            />
-          </div>
+          <form onSubmit={handleSubmit} className="form-stack">
+            <div className="form-field">
+              <label className="form-label" htmlFor="name">
+                Seu nome completo
+              </label>
+              <input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="input"
+                placeholder="Ex: Maria Silva"
+              />
+            </div>
 
-          {selectedSlot ? (
-            <p className="text-[11px]" style={{ color: '#666666', marginTop: 8 }}>
-              Você selecionou:{' '}
-              <span className="font-medium">
-                {formatDate(selectedSlot.date)} às {formatTime(selectedSlot.start_time)}
-              </span>
-              .
-            </p>
-          ) : (
-            <p className="text-[11px]" style={{ color: '#666666', marginTop: 8 }}>
-              Selecione um horário na lista acima para continuar.
-            </p>
-          )}
+            <div className="form-field">
+              <label className="form-label" htmlFor="people">
+                Número de pessoas na visita
+              </label>
+              <input
+                id="people"
+                type="number"
+                min={1}
+                value={people}
+                onChange={(e) => setPeople(Number(e.target.value) || 1)}
+                className="input"
+                style={{ maxWidth: 120 }}
+              />
+            </div>
 
-          {error && (
-            <p
-              className="card"
-              style={{
-                padding: 8,
-                fontSize: 12,
-                color: '#ff3b30',
-                borderColor: '#ff3b30',
-                background: 'rgba(255, 59, 48, 0.08)',
-              }}
-            >
-              {error}
-            </p>
-          )}
-
-          {success && (
-            <p
-              className="card"
-              style={{
-                padding: 8,
-                fontSize: 12,
-                color: '#34c759',
-                borderColor: '#34c759',
-                background: 'rgba(52, 199, 89, 0.08)',
-              }}
-            >
-              {success}
-            </p>
-          )}
-
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="submit"
-              disabled={loading}
-              className="primary-button"
-            >
-              {needsReplaceConfirmation ? 'Mudar agendamento' : 'Agendar visita'}
-            </button>
-
-            {needsReplaceConfirmation && (
-              <p className="text-[11px]" style={{ color: '#666666' }}>
-                Ao confirmar, seu agendamento anterior será apagado e substituído pelo novo
-                horário.
+            {selectedSlot ? (
+              <p className="form-hint">
+                Horário selecionado:{' '}
+                <strong>
+                  {formatDate(selectedSlot.date)} às {formatTime(selectedSlot.start_time)}
+                </strong>
+                .
               </p>
+            ) : (
+              <p className="form-hint">Selecione um horário na lista acima para continuar.</p>
             )}
-          </div>
-        </form>
-      </section>
+
+            {error && <p className="status-error">{error}</p>}
+
+            {!cachedBooking && success && <p className="status-success">{success}</p>}
+
+            <div className="action-row">
+              <button type="submit" disabled={loading} className="primary-button">
+                {loading
+                  ? 'Aguarde...'
+                  : needsReplaceConfirmation
+                  ? 'Confirmar mudança'
+                  : 'Agendar visita'}
+              </button>
+
+              {needsReplaceConfirmation && (
+                <p className="form-hint">
+                  Ao confirmar, seu agendamento anterior será substituído pelo novo horário.
+                </p>
+              )}
+
+              {isEditing && (
+                <button
+                  type="button"
+                  className="ghost-button"
+                  onClick={() => { setIsEditing(false); setError(null); }}
+                >
+                  Cancelar edição
+                </button>
+              )}
+            </div>
+          </form>
+        </section>
       )}
     </main>
   );
 }
-
-
