@@ -100,3 +100,25 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 - Plain CSS in `web/app/globals.css` (no Tailwind)
 - Glass morphism cards, warm peach gradient background
 - Accent color matches mobile app: `#ff6f61` (Coral)
+
+## Caveats para desenvolvimento web (Expo Web)
+
+### `Alert.alert()` é no-op na web
+`Alert.alert()` não funciona no React Native Web — não exibe nada e os callbacks nunca são chamados. Sempre usar `Platform.OS` para diferenciar:
+
+```ts
+if (Platform.OS === 'web') {
+  if (window.confirm('Mensagem?')) { /* ação */ }
+} else {
+  Alert.alert('Título', 'Mensagem', [{ text: 'OK', onPress: () => {} }]);
+}
+```
+
+Mesma coisa para navegação pós-ação: na web, chamar `router.replace(...)` diretamente em vez de dentro de um callback do `Alert.alert`.
+
+### `router.back()` não funciona sem histórico na web
+`router.back()` usa `window.history.back()` — falha silenciosamente se não há histórico (ex: URL aberta diretamente). Usar sempre:
+
+```ts
+router.canGoBack() ? router.back() : router.replace('/rota-pai')
+```

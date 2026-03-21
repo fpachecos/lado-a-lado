@@ -46,14 +46,19 @@ export default async function SchedulePage({ params }: SchedulePageProps) {
     console.error(bookingsError);
   }
 
-  // Como a web não pode acessar visit_schedules, montamos um "resumo" da agenda
   const dates = slots.map((s) => s.date);
   const startDate = dates.reduce((min, d) => (d < min ? d : min), dates[0]);
   const endDate = dates.reduce((max, d) => (d > max ? d : max), dates[0]);
 
+  const { data: scheduleData } = await supabase
+    .from('visit_schedules')
+    .select('custom_message')
+    .eq('id', scheduleId)
+    .single();
+
   const scheduleSummary = {
     id: scheduleId,
-    custom_message: null as string | null,
+    custom_message: scheduleData?.custom_message ?? null,
     start_date: startDate,
     end_date: endDate,
   };

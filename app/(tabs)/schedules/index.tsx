@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Alert,
   TextInput,
+  Platform,
 } from 'react-native';
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
@@ -73,31 +74,39 @@ export default function SchedulesScreen() {
   }, [searchQuery, schedules]);
 
   const handleDelete = async (scheduleId: string) => {
-    Alert.alert(
-      'Confirmar exclusão',
-      'Deseja realmente excluir esta agenda?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Excluir',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const { error } = await supabase
-                .from('visit_schedules')
-                .delete()
-                .eq('id', scheduleId);
+    const doDelete = async () => {
+      try {
+        const { error } = await supabase
+          .from('visit_schedules')
+          .delete()
+          .eq('id', scheduleId);
 
-              if (error) throw error;
+        if (error) throw error;
 
-              await loadSchedules();
-            } catch (error: any) {
-              Alert.alert('Erro', error.message);
-            }
-          },
-        },
-      ]
-    );
+        await loadSchedules();
+      } catch (error: any) {
+        if (Platform.OS === 'web') {
+          window.alert('Erro: ' + error.message);
+        } else {
+          Alert.alert('Erro', error.message);
+        }
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('Deseja realmente excluir esta agenda?')) {
+        await doDelete();
+      }
+    } else {
+      Alert.alert(
+        'Confirmar exclusão',
+        'Deseja realmente excluir esta agenda?',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Excluir', style: 'destructive', onPress: doDelete },
+        ]
+      );
+    }
   };
 
   if (loading) {
@@ -112,7 +121,10 @@ export default function SchedulesScreen() {
     <View style={styles.container}>
       {/* Header com botão de voltar */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => router.canGoBack() ? router.back() : router.replace('/')}
+          style={styles.backButton}
+        >
           <Text style={styles.backButtonText}>←</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Agendas de Visitas</Text>

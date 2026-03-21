@@ -18,6 +18,7 @@ import { Baby } from '@/types/database';
 import { isPremiumUser } from '@/lib/revenuecat';
 import { format } from 'date-fns';
 import DatePicker from '@/components/DatePicker';
+import MarkdownEditor from '@/components/MarkdownEditor';
 
 export default function NewScheduleScreen() {
   const [baby, setBaby] = useState<Baby | null>(null);
@@ -99,18 +100,21 @@ export default function NewScheduleScreen() {
 
       if (scheduleError) throw scheduleError;
 
-      Alert.alert(
-        'Agenda criada!',
-        `Código da agenda: ${schedule.id}\n\nAgora você pode adicionar os slots de visita.`,
-        [
-          {
-            text: 'OK',
-            onPress: () => router.replace(`/(tabs)/schedules/${schedule.id}`),
-          },
-        ]
-      );
+      if (Platform.OS === 'web') {
+        router.replace(`/(tabs)/schedules/${schedule.id}`);
+      } else {
+        Alert.alert(
+          'Agenda criada!',
+          `Código da agenda: ${schedule.id}\n\nAgora você pode adicionar os slots de visita.`,
+          [{ text: 'OK', onPress: () => router.replace(`/(tabs)/schedules/${schedule.id}`) }]
+        );
+      }
     } catch (error: any) {
-      Alert.alert('Erro', error.message || 'Não foi possível criar a agenda');
+      if (Platform.OS === 'web') {
+        window.alert(error.message || 'Não foi possível criar a agenda');
+      } else {
+        Alert.alert('Erro', error.message || 'Não foi possível criar a agenda');
+      }
     } finally {
       setLoading(false);
     }
@@ -123,7 +127,7 @@ export default function NewScheduleScreen() {
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
     >
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)/schedules')} style={styles.backButton}>
           <Text style={styles.backButtonText}>←</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Nova Agenda</Text>
@@ -176,16 +180,12 @@ export default function NewScheduleScreen() {
               />
             )}
 
-            <Text style={styles.label}>Mensagem Personalizada (opcional)</Text>
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              placeholder="Digite orientações para os visitantes..."
-              placeholderTextColor={Colors.textSecondary}
+            <Text style={styles.label}>Instruções para os Visitantes (opcional)</Text>
+            <MarkdownEditor
               value={customMessage}
-              onChangeText={setCustomMessage}
-              multiline
-              numberOfLines={6}
-              textAlignVertical="top"
+              onChange={setCustomMessage}
+              placeholder="Digite orientações para os visitantes..."
+              minHeight={140}
             />
 
             <TouchableOpacity
