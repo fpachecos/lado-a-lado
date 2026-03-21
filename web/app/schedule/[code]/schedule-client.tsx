@@ -37,6 +37,20 @@ interface SlotWithStats extends Slot {
   remaining_spots: number;
 }
 
+function renderMarkdown(text: string): string {
+  // Escape HTML first to prevent XSS
+  const escaped = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  return escaped
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/^- (.+)$/gm, '<li style="margin-left:16px;list-style:disc">$1</li>')
+    .replace(/\n/g, '<br>');
+}
+
 function formatTime(time: string) {
   return time.slice(0, 5); // HH:MM
 }
@@ -249,7 +263,7 @@ export default function ScheduleClient({ schedule, slots, bookings }: Props) {
           Escolha um horário disponível na agenda para realizar sua visita.
         </p>
         {schedule.custom_message ? (
-          <p
+          <div
             className="card"
             style={{
               padding: 10,
@@ -258,9 +272,8 @@ export default function ScheduleClient({ schedule, slots, bookings }: Props) {
                 'linear-gradient(135deg, rgba(255,255,255,0.9), rgba(168,213,186,0.9))',
               borderColor: 'rgba(168,213,186,0.9)',
             }}
-          >
-            {schedule.custom_message}
-          </p>
+            dangerouslySetInnerHTML={{ __html: renderMarkdown(schedule.custom_message) }}
+          />
         ) : null}
         <p className="text-xs" style={{ color: '#666666' }}>
           Período da agenda: {formatDate(schedule.start_date)} até{' '}

@@ -21,6 +21,8 @@ import { format, parse, addMinutes, isBefore, isAfter } from 'date-fns';
 import DatePicker from '@/components/DatePicker';
 import TimePicker from '@/components/TimePicker';
 import * as Clipboard from 'expo-clipboard';
+import MarkdownEditor from '@/components/MarkdownEditor';
+import MarkdownRenderer from '@/components/MarkdownRenderer';
 
 export default function ScheduleDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -29,6 +31,8 @@ export default function ScheduleDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [showSlotModal, setShowSlotModal] = useState(false);
   const [editingSlot, setEditingSlot] = useState<VisitSlot | null>(null);
+  const [editingMessage, setEditingMessage] = useState(false);
+  const [editedMessage, setEditedMessage] = useState('');
   const [slotDate, setSlotDate] = useState(new Date());
   const [slotStartTime, setSlotStartTime] = useState(new Date());
   const [slotEndTime, setSlotEndTime] = useState(new Date());
@@ -76,6 +80,26 @@ export default function ScheduleDetailScreen() {
       Alert.alert('Erro', error.message || 'Não foi possível carregar a agenda');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const openEditMessage = () => {
+    setEditedMessage(schedule?.custom_message ?? '');
+    setEditingMessage(true);
+  };
+
+  const saveMessage = async () => {
+    if (!schedule) return;
+    try {
+      const { error } = await supabase
+        .from('visit_schedules')
+        .update({ custom_message: editedMessage.trim() || null })
+        .eq('id', schedule.id);
+      if (error) throw error;
+      setEditingMessage(false);
+      await loadSchedule();
+    } catch (error: any) {
+      Alert.alert('Erro', error.message || 'Não foi possível salvar as instruções');
     }
   };
 
@@ -407,7 +431,7 @@ export default function ScheduleDetailScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)/schedules')} style={styles.backButton}>
           <Text style={styles.backButtonText}>←</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Agenda</Text>
@@ -432,10 +456,44 @@ export default function ScheduleDetailScreen() {
               <Text style={styles.copyButtonText}>📋</Text>
             </TouchableOpacity>
           </View>
-          {schedule.custom_message && (
+          {editingMessage ? (
+            <View style={styles.messageEditBox}>
+              <Text style={styles.messageLabel}>Instruções para os Visitantes</Text>
+              <MarkdownEditor
+                value={editedMessage}
+                onChange={setEditedMessage}
+                placeholder="Digite orientações para os visitantes..."
+                minHeight={120}
+              />
+              <View style={styles.messageEditActions}>
+                <TouchableOpacity
+                  style={styles.messageCancelButton}
+                  onPress={() => setEditingMessage(false)}
+                >
+                  <Text style={styles.messageCancelButtonText}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.messageSaveButton} onPress={saveMessage}>
+                  <Text style={styles.messageSaveButtonText}>Salvar</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
             <View style={styles.messageBox}>
-              <Text style={styles.messageLabel}>Mensagem:</Text>
-              <Text style={styles.messageText}>{schedule.custom_message}</Text>
+              <View style={styles.messageLabelRow}>
+                <Text style={styles.messageLabel}>Instruções:</Text>
+                <TouchableOpacity onPress={openEditMessage} style={styles.messageEditButton}>
+                  <Text style={styles.messageEditButtonText}>
+                    {schedule.custom_message ? 'Editar' : '+ Adicionar'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              {schedule.custom_message ? (
+                <MarkdownRenderer style={styles.messageText}>
+                  {schedule.custom_message}
+                </MarkdownRenderer>
+              ) : (
+                <Text style={styles.messageEmptyText}>Nenhuma instrução definida.</Text>
+              )}
             </View>
           )}
         </View>
@@ -727,17 +785,74 @@ const styles = StyleSheet.create({
     marginTop: 12,
     padding: 12,
     backgroundColor: Colors.secondary + '20',
-    borderRadius: 8,
+    borderRadius: 12,
+  },
+  messageLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
   },
   messageLabel: {
     fontSize: 12,
     fontWeight: '600',
     color: Colors.textSecondary,
-    marginBottom: 4,
+  },
+  messageEditButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    backgroundColor: Colors.primary + '20',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.primary + '40',
+  },
+  messageEditButtonText: {
+    fontSize: 11,
+    color: Colors.primary,
+    fontWeight: '600',
   },
   messageText: {
     fontSize: 14,
     color: Colors.text,
+  },
+  messageEmptyText: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    fontStyle: 'italic',
+  },
+  messageEditBox: {
+    marginTop: 12,
+  },
+  messageEditActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 8,
+  },
+  messageCancelButton: {
+    flex: 1,
+    padding: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.glassBorder,
+    backgroundColor: Colors.glass,
+    alignItems: 'center',
+  },
+  messageCancelButtonText: {
+    color: Colors.text,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  messageSaveButton: {
+    flex: 1,
+    backgroundColor: Colors.primary,
+    borderRadius: 12,
+    padding: 10,
+    alignItems: 'center',
+  },
+  messageSaveButtonText: {
+    color: Colors.white,
+    fontSize: 14,
+    fontWeight: '600',
   },
   emptyCard: {
     backgroundColor: Colors.white,
