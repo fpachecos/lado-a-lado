@@ -33,3 +33,10 @@ web/.next/cache/
 
 # Supabase local
 supabase/
+
+# iOS native (gerado por expo prebuild)
+ios/
+
+# Credentials locais
+credentials.json
+credentials/
