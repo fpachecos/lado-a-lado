@@ -69,8 +69,24 @@ if (Platform.OS === 'web') {
 
 Pós-ação na web: chamar `router.replace(...)` diretamente, nunca dentro de callback de `Alert`.
 
-### `router.back()` sem histórico na web
-`router.back()` falha silenciosamente se não há histórico. Usar sempre:
+### Modais com `TextInput` devem usar `KeyboardAvoidingView`
+Todo `Modal` que contenha um `TextInput` deve envolver seu conteúdo com `KeyboardAvoidingView` para evitar que o teclado virtual sobreponha o campo no celular:
+
+```tsx
+import { KeyboardAvoidingView, Platform } from 'react-native';
+
+<Modal visible={...} transparent animationType="fade">
+  <KeyboardAvoidingView
+    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    style={{ flex: 1 }}
+  >
+    {/* overlay + conteúdo do modal */}
+  </KeyboardAvoidingView>
+</Modal>
+```
+
+### `router.back()` não funciona sem histórico na web
+`router.back()` usa `window.history.back()` — falha silenciosamente se não há histórico (ex: URL aberta diretamente). Usar sempre:
 
 ```ts
 router.canGoBack() ? router.back() : router.replace('/rota-pai')
