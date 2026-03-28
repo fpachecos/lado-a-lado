@@ -16,6 +16,7 @@ import { VisitSchedule } from '@/types/database';
 import { BlurView } from 'expo-blur';
 import { format, parse } from 'date-fns';
 import * as Clipboard from 'expo-clipboard';
+import { GradientBackground } from '@/components/GradientBackground';
 
 export default function SchedulesScreen() {
   const [schedules, setSchedules] = useState<VisitSchedule[]>([]);
@@ -111,13 +112,16 @@ export default function SchedulesScreen() {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.loadingText}>Carregando...</Text>
-      </View>
+      <GradientBackground>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Carregando...</Text>
+        </View>
+      </GradientBackground>
     );
   }
 
   return (
+    <GradientBackground>
     <View style={styles.container}>
       {/* Header com botão de voltar */}
       <View style={styles.header}>
@@ -220,13 +224,19 @@ export default function SchedulesScreen() {
         </BlurView>
       </View>
     </View>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: 'transparent',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   header: {
     flexDirection: 'row',

@@ -17,6 +17,7 @@ import { Colors } from '@/constants/Colors';
 import { Companion, CompanionActivity } from '@/types/database';
 import MarkdownEditor from '@/components/MarkdownEditor';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
+import { GradientBackground } from '@/components/GradientBackground';
 
 export default function CompanionActivitiesScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -200,13 +201,16 @@ export default function CompanionActivitiesScreen() {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.loadingText}>Carregando...</Text>
-      </View>
+      <GradientBackground>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Carregando...</Text>
+        </View>
+      </GradientBackground>
     );
   }
 
   return (
+    <GradientBackground>
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
@@ -400,13 +404,19 @@ export default function CompanionActivitiesScreen() {
         </KeyboardAvoidingView>
       </Modal>
     </View>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: 'transparent',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   scrollContent: {
     flexGrow: 1,

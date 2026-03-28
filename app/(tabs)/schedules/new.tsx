@@ -19,6 +19,7 @@ import { isPremiumUser } from '@/lib/revenuecat';
 import { format } from 'date-fns';
 import DatePicker from '@/components/DatePicker';
 import MarkdownEditor from '@/components/MarkdownEditor';
+import { GradientBackground } from '@/components/GradientBackground';
 
 export default function NewScheduleScreen() {
   const [baby, setBaby] = useState<Baby | null>(null);
@@ -121,6 +122,7 @@ export default function NewScheduleScreen() {
   };
 
   return (
+    <GradientBackground>
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -204,13 +206,14 @@ export default function NewScheduleScreen() {
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: 'transparent',
   },
   scrollView: {
     flex: 1,

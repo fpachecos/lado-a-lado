@@ -14,6 +14,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { Colors } from '@/constants/Colors';
 import { Companion } from '@/types/database';
+import { GradientBackground } from '@/components/GradientBackground';
 
 export default function CompanionEditScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -94,13 +95,16 @@ export default function CompanionEditScreen() {
 
   if (initialLoading) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.loadingText}>Carregando...</Text>
-      </View>
+      <GradientBackground>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Carregando...</Text>
+        </View>
+      </GradientBackground>
     );
   }
 
   return (
+    <GradientBackground>
     <KeyboardAvoidingView
       style={styles.keyboardAvoidingView}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -143,16 +147,22 @@ export default function CompanionEditScreen() {
       </View>
     </ScrollView>
     </KeyboardAvoidingView>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
   keyboardAvoidingView: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: 'transparent',
   },
   container: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   header: {
     flexDirection: 'row',

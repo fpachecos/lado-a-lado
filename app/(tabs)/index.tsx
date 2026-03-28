@@ -15,6 +15,7 @@ import { supabase } from '@/lib/supabase';
 import { Colors } from '@/constants/Colors';
 import { Baby, VisitSchedule, Companion } from '@/types/database';
 import { isPremiumUser, getOfferings, purchasePackage, restorePurchases } from '@/lib/revenuecat';
+import { GradientBackground } from '@/components/GradientBackground';
 
 export default function HomeScreen() {
   const [baby, setBaby] = useState<Baby | null>(null);
@@ -173,15 +174,16 @@ export default function HomeScreen() {
 
   if (loading) {
     return (
-      <View style={styles.container}>
+      <GradientBackground>
         <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>Carregando...</Text>
         </View>
-      </View>
+      </GradientBackground>
     );
   }
 
   return (
+    <GradientBackground>
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header */}
       <View style={styles.header}>
@@ -403,13 +405,14 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </Modal>
     </ScrollView>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: 'transparent',
   },
   loadingContainer: {
     flex: 1,
@@ -615,7 +618,7 @@ const styles = StyleSheet.create({
   // ── Primary Button ──
   primaryButton: {
     backgroundColor: Colors.primary,
-    borderRadius: 14,
+    borderRadius: 50,
     paddingVertical: 14,
     paddingHorizontal: 20,
     alignItems: 'center',

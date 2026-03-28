@@ -23,6 +23,7 @@ import TimePicker from '@/components/TimePicker';
 import * as Clipboard from 'expo-clipboard';
 import MarkdownEditor from '@/components/MarkdownEditor';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
+import { GradientBackground } from '@/components/GradientBackground';
 
 export default function ScheduleDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -414,21 +415,26 @@ export default function ScheduleDetailScreen() {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.loadingText}>Carregando...</Text>
-      </View>
+      <GradientBackground>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Carregando...</Text>
+        </View>
+      </GradientBackground>
     );
   }
 
   if (!schedule) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>Agenda não encontrada</Text>
-      </View>
+      <GradientBackground>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.errorText}>Agenda não encontrada</Text>
+        </View>
+      </GradientBackground>
     );
   }
 
   return (
+    <GradientBackground>
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)/schedules')} style={styles.backButton}>
@@ -703,13 +709,19 @@ export default function ScheduleDetailScreen() {
         </View>
       </Modal>
     </View>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: 'transparent',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   header: {
     flexDirection: 'row',

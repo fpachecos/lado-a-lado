@@ -14,6 +14,7 @@ import { Colors } from '@/constants/Colors';
 import { VisitSchedule, VisitSlot, VisitBooking } from '@/types/database';
 import { format, parse } from 'date-fns';
 import { BlurView } from 'expo-blur';
+import { GradientBackground } from '@/components/GradientBackground';
 
 interface SlotWithBookings extends VisitSlot {
   bookings: VisitBooking[];
@@ -114,13 +115,16 @@ export default function VisitsScreen() {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.loadingText}>Carregando...</Text>
-      </View>
+      <GradientBackground>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Carregando...</Text>
+        </View>
+      </GradientBackground>
     );
   }
 
   return (
+    <GradientBackground>
     <View style={styles.container}>
       {/* Header com botão de voltar */}
       <View style={styles.header}>
@@ -247,13 +251,19 @@ export default function VisitsScreen() {
         )}
       </ScrollView>
     </View>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: 'transparent',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   header: {
     flexDirection: 'row',
