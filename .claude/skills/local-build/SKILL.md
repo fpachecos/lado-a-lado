@@ -32,7 +32,23 @@ cd /Users/fipacheco/lado-a-lado && unset NODE_OPTIONS && npx expo prebuild --pla
 cd /Users/fipacheco/lado-a-lado/ios && unset NODE_OPTIONS && pod install
 ```
 
-3. Obter o UUID do provisioning profile mais recente:
+3. Incrementar o `buildNumber` no `app.json` antes de arquivar — a App Store Connect rejeita builds com versão igual ou inferior à última enviada. Ler o valor atual, incrementar o último componente e salvar:
+
+```bash
+node -e "
+const fs = require('fs');
+const path = '/Users/fipacheco/lado-a-lado/app.json';
+const json = JSON.parse(fs.readFileSync(path, 'utf8'));
+const current = json.expo.ios.buildNumber;
+const parts = current.split('.');
+parts[parts.length - 1] = String(Number(parts[parts.length - 1]) + 1);
+json.expo.ios.buildNumber = parts.join('.');
+fs.writeFileSync(path, JSON.stringify(json, null, 2) + '\n');
+console.log('buildNumber:', current, '->', json.expo.ios.buildNumber);
+"
+```
+
+4. Obter o UUID do provisioning profile mais recente:
 
 ```bash
 security cms -D -i "$HOME/Library/MobileDevice/Provisioning Profiles/c84f35bb-d964-4178-b4c0-b78dbc855d01.mobileprovision" | grep -A1 "<key>UUID" | grep "<string>" | sed 's/.*<string>\(.*\)<\/string>.*/\1/'
@@ -40,7 +56,7 @@ security cms -D -i "$HOME/Library/MobileDevice/Provisioning Profiles/c84f35bb-d9
 
    > O profile correto é o mais recente: `*[expo] com.ladoalado.app AppStore` com UUID `d584b4c2-d3d4-4ded-bf59-478d269b5adf`.
 
-4. Arquivar o app:
+5. Arquivar o app:
 
 ```bash
 cd /Users/fipacheco/lado-a-lado && xcodebuild \
@@ -55,7 +71,7 @@ cd /Users/fipacheco/lado-a-lado && xcodebuild \
   archive -archivePath /tmp/ladoalado.xcarchive
 ```
 
-5. Exportar o IPA:
+6. Exportar o IPA:
 
 ```bash
 xcodebuild -exportArchive \
@@ -92,10 +108,24 @@ xcodebuild -exportArchive \
 </plist>
 ```
 
-6. Informar que o IPA foi gerado em `/tmp/ladoalado-export/LadoaLado.ipa` e abrir a pasta:
+7. Informar que o IPA foi gerado em `/tmp/ladoalado-export/LadoaLado.ipa` e abrir a pasta:
 
 ```bash
 open /tmp/ladoalado-export/
+```
+
+8. Abrir um PR com a alteração do `app.json` (novo `buildNumber`):
+
+```bash
+cd /Users/fipacheco/lado-a-lado
+NEW_BUILD=$(node -e "const j=require('./app.json');console.log(j.expo.ios.buildNumber)")
+git checkout -b "chore/bump-build-number-${NEW_BUILD}"
+git add app.json
+git commit -m "chore: bump iOS buildNumber para ${NEW_BUILD}"
+git push -u origin "chore/bump-build-number-${NEW_BUILD}"
+gh pr create \
+  --title "chore: bump iOS buildNumber para ${NEW_BUILD}" \
+  --body "Atualiza o \`buildNumber\` do \`app.json\` após build local de produção."
 ```
 
 ## Notas importantes
