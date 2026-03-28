@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  Platform,
   ScrollView,
 } from 'react-native';
 import { router } from 'expo-router';
@@ -87,14 +88,13 @@ export default function BabyScreen() {
         if (error) throw error;
       }
 
-      Alert.alert('Sucesso', 'Informações do bebê salvas com sucesso!', [
-        {
-          text: 'OK',
-          onPress: () => router.replace('/(tabs)'),
-        },
-      ]);
+      router.replace('/(tabs)');
     } catch (error: any) {
-      Alert.alert('Erro', error.message || 'Não foi possível salvar as informações');
+      if (Platform.OS === 'web') {
+        window.alert(error.message || 'Não foi possível salvar as informações');
+      } else {
+        Alert.alert('Erro', error.message || 'Não foi possível salvar as informações');
+      }
     } finally {
       setLoading(false);
     }
@@ -111,7 +111,7 @@ export default function BabyScreen() {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)')} style={styles.backButton}>
           <Text style={styles.backButtonText}>←</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Informações do Bebê</Text>

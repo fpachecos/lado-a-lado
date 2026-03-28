@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -19,44 +18,57 @@ export default function SignupScreen() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+
+  const translateError = (error: any): string => {
+    const message: string = error?.message || '';
+    const code: string = error?.code || '';
+
+    if (code === 'validation_failed' || message.includes('validate email') || message.includes('invalid format')) {
+      return 'E-mail inválido. Verifique o endereço digitado.';
+    }
+    if (message.includes('already registered') || message.includes('already been registered')) {
+      return 'Este e-mail já está cadastrado.';
+    }
+    if (message.includes('invalid email') || message.includes('Invalid email')) {
+      return 'E-mail inválido. Verifique o endereço digitado.';
+    }
+    if (message.includes('Password should be')) {
+      return 'A senha deve ter pelo menos 6 caracteres.';
+    }
+    return 'Não foi possível criar a conta. Tente novamente.';
+  };
 
   const handleSignup = async () => {
+    setErrorMessage('');
+    setSuccessMessage('');
+
     if (!email || !password || !confirmPassword) {
-      Alert.alert('Erro', 'Por favor, preencha todos os campos');
+      setErrorMessage('Preencha todos os campos para continuar.');
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Erro', 'As senhas não coincidem');
+      setErrorMessage('As senhas não coincidem.');
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert('Erro', 'A senha deve ter pelo menos 6 caracteres');
+      setErrorMessage('A senha deve ter pelo menos 6 caracteres.');
       return;
     }
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
+      const { error } = await supabase.auth.signUp({ email, password });
 
       if (error) throw error;
 
-      Alert.alert(
-        'Sucesso',
-        'Conta criada com sucesso! Você pode fazer login agora.',
-        [
-          {
-            text: 'OK',
-            onPress: () => router.replace('/(auth)/login'),
-          },
-        ]
-      );
+      setSuccessMessage('Conta criada com sucesso! Entrando...');
+      setTimeout(() => router.replace('/(tabs)'), 1500);
     } catch (error: any) {
-      Alert.alert('Erro ao criar conta', error.message);
+      setErrorMessage(translateError(error));
     } finally {
       setLoading(false);
     }
@@ -113,6 +125,18 @@ export default function SignupScreen() {
                 {loading ? 'Criando...' : 'Criar Conta'}
               </Text>
             </TouchableOpacity>
+
+            {errorMessage ? (
+              <View style={styles.errorBox}>
+                <Text style={styles.errorText}>{errorMessage}</Text>
+              </View>
+            ) : null}
+
+            {successMessage ? (
+              <View style={styles.successBox}>
+                <Text style={styles.successText}>{successMessage}</Text>
+              </View>
+            ) : null}
 
             <View style={styles.loginContainer}>
               <Text style={styles.loginText}>Já tem uma conta? </Text>
@@ -180,6 +204,36 @@ const styles = StyleSheet.create({
     color: Colors.white,
     fontSize: 16,
     fontWeight: '600',
+  },
+  errorBox: {
+    marginTop: 12,
+    backgroundColor: 'rgba(224, 52, 40, 0.08)',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(224, 52, 40, 0.25)',
+  },
+  errorText: {
+    color: Colors.error,
+    fontSize: 14,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  successBox: {
+    marginTop: 12,
+    backgroundColor: 'rgba(24, 133, 74, 0.08)',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(24, 133, 74, 0.25)',
+  },
+  successText: {
+    color: Colors.success,
+    fontSize: 14,
+    fontWeight: '500',
+    textAlign: 'center',
   },
   loginContainer: {
     flexDirection: 'row',
