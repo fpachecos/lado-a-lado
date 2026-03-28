@@ -10,6 +10,9 @@ Execute os scripts nesta ordem em bancos novos:
 2. **trigger_no_overlap.sql** — Trigger que impede sobreposição de slots no mesmo dia/horário.
 3. **migration_add_schedule_name.sql** — Adiciona a coluna `name` à tabela `visit_schedules`.
 4. **migration_companions.sql** — Cria as tabelas `companions` e `companion_activities` com RLS e triggers.
+5. **migration_delete_user_rpc.sql** — Cria a função RPC `public.delete_user()` que permite ao usuário autenticado excluir a própria conta.
+6. **migration_delete_user_rpc_v2.sql** — Melhoria da `delete_user()`: exclui dinamicamente todos os dados do usuário em qualquer tabela do schema `ladoalado` que possua coluna `user_id`, sem necessidade de atualização manual ao adicionar novas tabelas.
+7. **migration_fix_overlap_trigger.sql** — Corrige bug no trigger `check_slot_overlap`: a verificação agora filtra por `schedule_id`, evitando falsos positivos entre slots de agendas diferentes no mesmo dia e horário.
 
 ## Como Executar
 

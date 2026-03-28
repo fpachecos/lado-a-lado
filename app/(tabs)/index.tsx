@@ -27,6 +27,7 @@ export default function HomeScreen() {
   const [showBabyMenu, setShowBabyMenu] = useState(false);
   const [selectedCompanion, setSelectedCompanion] = useState<Companion | null>(null);
   const [showCompanionMenu, setShowCompanionMenu] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -191,8 +192,8 @@ export default function HomeScreen() {
           <Text style={styles.headerEyebrow}>Bem-vindo ao</Text>
           <Text style={styles.title}>Lado a Lado</Text>
         </View>
-        <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-          <Text style={styles.logoutText}>Sair</Text>
+        <TouchableOpacity onPress={() => setShowUserMenu(true)} style={styles.logoutButton}>
+          <Text style={styles.logoutText}>⋯</Text>
         </TouchableOpacity>
       </View>
 
@@ -299,6 +300,42 @@ export default function HomeScreen() {
           </View>
         )}
       </View>
+
+      {/* Menu do usuário */}
+      <Modal
+        visible={showUserMenu}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowUserMenu(false)}
+      >
+        <TouchableOpacity
+          style={styles.menuOverlay}
+          activeOpacity={1}
+          onPress={() => setShowUserMenu(false)}
+        >
+          <BlurView intensity={80} tint="light" style={styles.menuContent}>
+            <View style={styles.menuHandle} />
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => { setShowUserMenu(false); router.push('/(tabs)/profile'); }}
+            >
+              <Text style={styles.menuItemText}>Perfil</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.menuItem, styles.menuItemDanger]}
+              onPress={() => { setShowUserMenu(false); handleLogout(); }}
+            >
+              <Text style={styles.menuItemDangerText}>Sair</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.menuItem, styles.menuItemCancel]}
+              onPress={() => setShowUserMenu(false)}
+            >
+              <Text style={styles.menuItemCancelText}>Cancelar</Text>
+            </TouchableOpacity>
+          </BlurView>
+        </TouchableOpacity>
+      </Modal>
 
       {/* Menu do bebê */}
       <Modal

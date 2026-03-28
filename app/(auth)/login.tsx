@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -19,10 +18,26 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const translateError = (message: string): string => {
+    if (message.includes('Invalid login credentials') || message.includes('invalid_credentials')) {
+      return 'E-mail ou senha incorretos.';
+    }
+    if (message.includes('Email not confirmed')) {
+      return 'Confirme seu e-mail antes de entrar.';
+    }
+    if (message.includes('Too many requests')) {
+      return 'Muitas tentativas. Aguarde alguns minutos.';
+    }
+    return 'Não foi possível fazer login. Tente novamente.';
+  };
 
   const handleLogin = async () => {
+    setErrorMessage('');
+
     if (!email || !password) {
-      Alert.alert('Erro', 'Por favor, preencha todos os campos');
+      setErrorMessage('Preencha e-mail e senha para continuar.');
       return;
     }
 
@@ -37,7 +52,7 @@ export default function LoginScreen() {
 
       router.replace('/(tabs)');
     } catch (error: any) {
-      Alert.alert('Erro ao fazer login', error.message);
+      setErrorMessage(translateError(error.message));
     } finally {
       setLoading(false);
     }
@@ -94,6 +109,12 @@ export default function LoginScreen() {
                 <Text style={styles.linkText}>Esqueci minha senha</Text>
               </TouchableOpacity>
             </View>
+
+            {errorMessage ? (
+              <View style={styles.errorBox}>
+                <Text style={styles.errorText}>{errorMessage}</Text>
+              </View>
+            ) : null}
 
             <View style={styles.signupContainer}>
               <Text style={styles.signupText}>Não tem uma conta? </Text>
@@ -186,6 +207,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: 0.2,
+  },
+  errorBox: {
+    marginTop: 12,
+    backgroundColor: 'rgba(224, 52, 40, 0.08)',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(224, 52, 40, 0.25)',
+  },
+  errorText: {
+    color: Colors.error,
+    fontSize: 14,
+    fontWeight: '500',
+    textAlign: 'center',
   },
   linkButton: {
     marginTop: 14,
