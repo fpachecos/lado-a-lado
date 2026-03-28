@@ -8,29 +8,30 @@ const REVENUECAT_API_KEY_IOS = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_IOS ||
 const PREMIUM_OVERRIDE = true;
 
 export const initializeRevenueCat = async () => {
-  if (Platform.OS === 'ios') {
-    const configuration = {
-      apiKey: REVENUECAT_API_KEY_IOS,
-    };
-    
-    Purchases.setLogLevel(Purchases.LOG_LEVEL.DEBUG);
-    await Purchases.configure(configuration);
+  if (PREMIUM_OVERRIDE) return;
+  if (Platform.OS !== 'ios') return;
+
+  try {
+    if (__DEV__) {
+      Purchases.setLogLevel(Purchases.LOG_LEVEL.DEBUG);
+    }
+    Purchases.configure({ apiKey: REVENUECAT_API_KEY_IOS });
+  } catch (error) {
+    console.error('[RevenueCat] Failed to initialize:', error);
   }
 };
 
 export const getCustomerInfo = async (): Promise<CustomerInfo | null> => {
   try {
     const customerInfo = await Purchases.getCustomerInfo();
-    
-    // Verificar se está usando sandbox (compras sandbox são detectadas automaticamente)
+
     if (__DEV__ && customerInfo) {
       console.log('Customer Info:', {
         activeSubscriptions: Object.keys(customerInfo.activeSubscriptions),
         entitlements: Object.keys(customerInfo.entitlements.active),
-        // O RevenueCat marca automaticamente compras sandbox
       });
     }
-    
+
     return customerInfo;
   } catch (error) {
     console.error('Error getting customer info:', error);
@@ -52,7 +53,6 @@ export const isPremiumUser = async (): Promise<boolean> => {
 export const getOfferings = async (): Promise<PurchasesOffering | null> => {
   try {
     const offerings = await Purchases.getOfferings();
-    // Debug: em desenvolvimento, logar o que o RevenueCat retornou
     if (__DEV__) {
       console.log('[RevenueCat] Offerings:', {
         hasCurrent: !!offerings.current,
@@ -88,4 +88,3 @@ export const restorePurchases = async (): Promise<CustomerInfo> => {
     throw error;
   }
 };
-

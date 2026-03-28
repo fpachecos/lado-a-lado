@@ -1,7 +1,14 @@
 export const Colors = {
   primary: '#FF6F61',      // Coral Suave
-  background: '#F4E4BC',   // Bege Quente
+  background: '#F4E4BC',   // Bege Quente (fallback — prefer GradientBackground)
   secondary: '#A8D5BA',    // Verde-Menta
+
+  // Gradient stops — matches web radial gradient
+  gradientStart: '#ffd4bf',   // Pêssego quente (topo-esquerda)
+  gradientMid: '#fce8c4',     // Creme aquecido (centro)
+  gradientEnd: '#f0c87a',     // Dourado âmbar (baixo-direita)
+
+
   neutral: '#E8E0D8',      // Cinza quente
   white: '#FAFAFA',        // Branco Off
   text: '#2D2018',         // Marrom escuro quente
