@@ -75,7 +75,7 @@ export default function ScheduleClient({ schedule, slots, bookings }: Props) {
   const router = useRouter();
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [name, setName] = useState('');
-  const [people, setPeople] = useState(1);
+  const [people, setPeople] = useState<string>('1');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -124,7 +124,7 @@ export default function ScheduleClient({ schedule, slots, bookings }: Props) {
       setCachedBooking(parsed);
       setSelectedSlotId(parsed.slotId);
       setName(parsed.visitorName);
-      setPeople(parsed.numberOfPeople);
+      setPeople(String(parsed.numberOfPeople));
     } catch {
       // ignore parse errors
     }
@@ -143,7 +143,7 @@ export default function ScheduleClient({ schedule, slots, bookings }: Props) {
       setError('Informe seu nome.');
       return;
     }
-    if (people < 1) {
+    if (!people || Number(people) < 1) {
       setError('O número de pessoas deve ser pelo menos 1.');
       return;
     }
@@ -157,7 +157,7 @@ export default function ScheduleClient({ schedule, slots, bookings }: Props) {
         body: JSON.stringify({
           slotId: selectedSlotId,
           visitorName: name.trim(),
-          numberOfPeople: people,
+          numberOfPeople: Number(people),
           replaceExisting: needsReplaceConfirmation || !!cachedBooking,
         }),
       });
@@ -180,7 +180,7 @@ export default function ScheduleClient({ schedule, slots, bookings }: Props) {
         const bookingToCache = {
           slotId: selectedSlotId,
           visitorName: name.trim(),
-          numberOfPeople: people,
+          numberOfPeople: Number(people),
         };
         globalThis.window.localStorage.setItem(
           `ladoalado_schedule_booking_${schedule.id}`,
@@ -236,7 +236,7 @@ export default function ScheduleClient({ schedule, slots, bookings }: Props) {
       setCachedBooking(null);
       setSelectedSlotId(null);
       setName('');
-      setPeople(1);
+      setPeople('1');
       setIsEditing(false);
       setSuccess('Agendamento cancelado com sucesso!');
 
@@ -409,7 +409,8 @@ export default function ScheduleClient({ schedule, slots, bookings }: Props) {
                 type="number"
                 min={1}
                 value={people}
-                onChange={(e) => setPeople(Number(e.target.value) || 1)}
+                onChange={(e) => setPeople(e.target.value)}
+                onFocus={(e) => e.target.select()}
                 className="input"
                 style={{ maxWidth: 120 }}
               />
