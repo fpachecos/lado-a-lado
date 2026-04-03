@@ -14,11 +14,14 @@ import { supabase } from '@/lib/supabase';
 import { Colors } from '@/constants/Colors';
 import { Baby } from '@/types/database';
 import { GradientBackground } from '@/components/GradientBackground';
+import DatePicker from '@/components/DatePicker';
+import { parseISO } from 'date-fns';
 
 export default function BabyScreen() {
   const [baby, setBaby] = useState<Baby | null>(null);
   const [name, setName] = useState('');
   const [gender, setGender] = useState<'male' | 'female' | null>(null);
+  const [birthDate, setBirthDate] = useState<Date | null>(null);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
 
@@ -45,6 +48,7 @@ export default function BabyScreen() {
         setBaby(data);
         setName(data.name || '');
         setGender(data.gender);
+        setBirthDate(data.birth_date ? parseISO(data.birth_date) : null);
       }
     } catch (error) {
       console.error('Error loading baby:', error);
@@ -65,6 +69,8 @@ export default function BabyScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      const birthDateStr = birthDate ? birthDate.toISOString().split('T')[0] : null;
+
       if (baby) {
         // Atualizar
         const { error } = await supabase
@@ -72,6 +78,7 @@ export default function BabyScreen() {
           .update({
             name: name.trim(),
             gender,
+            birth_date: birthDateStr,
           })
           .eq('id', baby.id);
 
@@ -84,6 +91,7 @@ export default function BabyScreen() {
             user_id: user.id,
             name: name.trim(),
             gender,
+            birth_date: birthDateStr,
           });
 
         if (error) throw error;
@@ -131,6 +139,13 @@ export default function BabyScreen() {
             placeholderTextColor={Colors.textSecondary}
             value={name}
             onChangeText={setName}
+          />
+
+          <Text style={styles.label}>Data de Nascimento</Text>
+          <DatePicker
+            value={birthDate ?? new Date()}
+            onChange={(date) => setBirthDate(date)}
+            maximumDate={new Date()}
           />
 
           <Text style={styles.label}>Sexo</Text>
