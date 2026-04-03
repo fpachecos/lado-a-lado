@@ -376,6 +376,12 @@ export default function HomeScreen() {
               <Text style={styles.menuItemText}>Acompanhar visitas</Text>
             </TouchableOpacity>
             <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => { setShowBabyMenu(false); router.push('/(tabs)/weight'); }}
+            >
+              <Text style={styles.menuItemText}>Crescimento (peso e altura)</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
               style={[styles.menuItem, styles.menuItemCancel]}
               onPress={() => setShowBabyMenu(false)}
             >

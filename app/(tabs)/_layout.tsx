@@ -43,6 +43,7 @@ export default function MainLayout() {
       <Stack.Screen name="companion" />
       <Stack.Screen name="companion-activities" />
       <Stack.Screen name="profile" />
+      <Stack.Screen name="weight" />
     </Stack>
   );
 }

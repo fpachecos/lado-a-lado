@@ -10,8 +10,25 @@ export interface Baby {
   user_id: string;
   name: string | null;
   gender: 'male' | 'female' | null;
+  birth_date: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface BabyWeight {
+  id: string;
+  baby_id: string;
+  weight_grams: number;
+  measured_at: string;
+  created_at: string;
+}
+
+export interface BabyHeight {
+  id: string;
+  baby_id: string;
+  height_mm: number;
+  measured_at: string;
+  created_at: string;
 }
 
 export interface VisitSchedule {
