@@ -52,6 +52,9 @@ export default function FeedingsScreen() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editingFeeding, setEditingFeeding] = useState<BabyFeeding | null>(null);
+  const [showActionMenu, setShowActionMenu] = useState(false);
+  const [selectedFeeding, setSelectedFeeding] = useState<BabyFeeding | null>(null);
 
   const now = new Date();
   const [startDateTime, setStartDateTime] = useState<Date>(now);
@@ -88,12 +91,26 @@ export default function FeedingsScreen() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  const openModal = () => {
+  const openAddModal = () => {
+    setEditingFeeding(null);
     const base = new Date();
     setStartDateTime(base);
     setEndDateTime(base);
     setBreast('left');
     setShowModal(true);
+  };
+
+  const openEditModal = (feeding: BabyFeeding) => {
+    setEditingFeeding(feeding);
+    setStartDateTime(new Date(feeding.started_at));
+    setEndDateTime(new Date(feeding.ended_at));
+    setBreast(feeding.breast);
+    setShowModal(true);
+  };
+
+  const handleFeedingPress = (feeding: BabyFeeding) => {
+    setSelectedFeeding(feeding);
+    setShowActionMenu(true);
   };
 
   const handleStartDateChange = (newDate: Date) => {
@@ -142,13 +159,22 @@ export default function FeedingsScreen() {
 
     setSaving(true);
     try {
-      const { error } = await supabase.from('baby_feedings').insert({
-        baby_id: baby.id,
-        started_at: startDateTime.toISOString(),
-        ended_at: endDateTime.toISOString(),
-        breast,
-      });
-      if (error) throw error;
+      if (editingFeeding) {
+        const { error } = await supabase.from('baby_feedings').update({
+          started_at: startDateTime.toISOString(),
+          ended_at: endDateTime.toISOString(),
+          breast,
+        }).eq('id', editingFeeding.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('baby_feedings').insert({
+          baby_id: baby.id,
+          started_at: startDateTime.toISOString(),
+          ended_at: endDateTime.toISOString(),
+          breast,
+        });
+        if (error) throw error;
+      }
       setShowModal(false);
       await loadData();
     } catch (e: any) {
@@ -246,7 +272,7 @@ export default function FeedingsScreen() {
           </View>
 
           {/* Botão adicionar */}
-          <TouchableOpacity style={styles.addButton} onPress={openModal} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.addButton} onPress={openAddModal} activeOpacity={0.7}>
             <Text style={styles.addButtonPlus}>+</Text>
             <Text style={styles.addButtonText}>Registrar mamada</Text>
           </TouchableOpacity>
@@ -264,7 +290,7 @@ export default function FeedingsScreen() {
                     <TouchableOpacity
                       key={feeding.id}
                       style={styles.feedingItem}
-                      onLongPress={() => handleDelete(feeding)}
+                      onPress={() => handleFeedingPress(feeding)}
                       activeOpacity={0.75}
                     >
                       <View style={styles.feedingTimeBlock}>
@@ -294,7 +320,7 @@ export default function FeedingsScreen() {
             </View>
           )}
 
-          <Text style={styles.deleteHint}>Segure um registro para excluí-lo</Text>
+          <Text style={styles.deleteHint}>Toque em um registro para editar ou excluir</Text>
         </View>
       </ScrollView>
 
@@ -312,7 +338,7 @@ export default function FeedingsScreen() {
           <View style={styles.modalOverlay}>
             <BlurView intensity={80} tint="light" style={styles.modalContent}>
               <View style={styles.modalHandle} />
-              <Text style={styles.modalTitle}>Registrar Mamada</Text>
+              <Text style={styles.modalTitle}>{editingFeeding ? 'Editar Mamada' : 'Registrar Mamada'}</Text>
 
               <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                 {/* Início */}
@@ -387,6 +413,52 @@ export default function FeedingsScreen() {
             </BlurView>
           </View>
         </KeyboardAvoidingView>
+      </Modal>
+      {/* Menu de ações do item */}
+      <Modal
+        visible={showActionMenu}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowActionMenu(false)}
+      >
+        <TouchableOpacity
+          style={styles.actionMenuOverlay}
+          activeOpacity={1}
+          onPress={() => setShowActionMenu(false)}
+        >
+          <BlurView intensity={80} tint="light" style={styles.actionMenuContent}>
+            <View style={styles.modalHandle} />
+            {selectedFeeding && (
+              <Text style={styles.actionMenuSubtitle}>
+                {format(new Date(selectedFeeding.started_at), 'HH:mm')} → {format(new Date(selectedFeeding.ended_at), 'HH:mm')}
+              </Text>
+            )}
+            <TouchableOpacity
+              style={styles.actionMenuItem}
+              onPress={() => {
+                setShowActionMenu(false);
+                if (selectedFeeding) openEditModal(selectedFeeding);
+              }}
+            >
+              <Text style={styles.actionMenuItemText}>Editar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionMenuItem, styles.actionMenuItemDanger]}
+              onPress={() => {
+                setShowActionMenu(false);
+                if (selectedFeeding) handleDelete(selectedFeeding);
+              }}
+            >
+              <Text style={styles.actionMenuItemDangerText}>Excluir</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionMenuItem, styles.actionMenuItemCancel]}
+              onPress={() => setShowActionMenu(false)}
+            >
+              <Text style={styles.actionMenuItemCancelText}>Cancelar</Text>
+            </TouchableOpacity>
+          </BlurView>
+        </TouchableOpacity>
       </Modal>
     </GradientBackground>
   );
@@ -633,4 +705,48 @@ const styles = StyleSheet.create({
   },
   saveButtonDisabled: { opacity: 0.6 },
   saveButtonText: { fontSize: 15, fontWeight: '700', color: '#fff' },
+
+  // Action menu
+  actionMenuOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  actionMenuContent: {
+    backgroundColor: Colors.glassDark,
+    borderRadius: 28,
+    padding: 8,
+    minWidth: 290,
+    maxWidth: '88%',
+    borderWidth: 1,
+    borderColor: Colors.glassBorder,
+    overflow: 'hidden',
+  },
+  actionMenuSubtitle: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    fontWeight: '500',
+    textAlign: 'center',
+    paddingBottom: 8,
+    paddingHorizontal: 20,
+  },
+  actionMenuItem: {
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.neutral,
+  },
+  actionMenuItemDanger: {
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.neutral,
+  },
+  actionMenuItemCancel: {
+    borderBottomWidth: 0,
+    marginTop: 4,
+    marginBottom: 4,
+  },
+  actionMenuItemText: { fontSize: 16, color: Colors.text, fontWeight: '500' },
+  actionMenuItemDangerText: { fontSize: 16, color: Colors.error, fontWeight: '500' },
+  actionMenuItemCancelText: { fontSize: 15, color: Colors.textSecondary, textAlign: 'center', fontWeight: '600' },
 });
