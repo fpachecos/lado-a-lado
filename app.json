@@ -2,7 +2,7 @@
   "expo": {
     "name": "Lado a Lado",
     "slug": "lado-a-lado",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -14,7 +14,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.ladoalado.app",
-      "buildNumber": "1.1.4",
+      "buildNumber": "1.1.5",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Este app precisa acessar suas fotos para personalizar o perfil.",
         "ITSAppUsesNonExemptEncryption": false
