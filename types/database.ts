@@ -82,3 +82,12 @@ export interface CompanionActivity {
   updated_at: string;
 }
 
+export interface BabyFeeding {
+  id: string;
+  baby_id: string;
+  started_at: string;
+  ended_at: string;
+  breast: 'left' | 'right' | 'both';
+  created_at: string;
+}
+

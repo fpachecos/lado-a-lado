@@ -1,0 +1,381 @@
+import React, { useEffect, useState, useCallback } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+} from 'react-native';
+import { router } from 'expo-router';
+import { format, subDays, parseISO, differenceInMinutes } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { supabase } from '@/lib/supabase';
+import { Colors } from '@/constants/Colors';
+import { BabyFeeding } from '@/types/database';
+import { GradientBackground } from '@/components/GradientBackground';
+
+type Breast = 'left' | 'right' | 'both';
+
+interface DaySummary {
+  day: string;
+  feedings: BabyFeeding[];
+  count: number;
+  totalMinutes: number;
+  avgMinutes: number;
+  breastCounts: Record<Breast, number>;
+}
+
+function formatDuration(minutes: number): string {
+  if (minutes < 1) return '< 1 min';
+  if (minutes < 60) return `${minutes} min`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m > 0 ? `${h}h ${m}min` : `${h}h`;
+}
+
+function getDayLabel(dateStr: string): string {
+  const today = format(new Date(), 'yyyy-MM-dd');
+  const yesterday = format(subDays(new Date(), 1), 'yyyy-MM-dd');
+  if (dateStr === today) return 'Hoje';
+  if (dateStr === yesterday) return 'Ontem';
+  return format(parseISO(dateStr), "d 'de' MMMM", { locale: ptBR });
+}
+
+function breastLabel(breast: Breast): string {
+  return breast === 'left' ? 'Esquerdo' : breast === 'right' ? 'Direito' : 'Ambos';
+}
+
+function buildSummaries(feedings: BabyFeeding[]): DaySummary[] {
+  const grouped: Record<string, BabyFeeding[]> = {};
+  for (const f of feedings) {
+    const day = format(new Date(f.started_at), 'yyyy-MM-dd');
+    if (!grouped[day]) grouped[day] = [];
+    grouped[day].push(f);
+  }
+
+  return Object.keys(grouped)
+    .sort((a, b) => b.localeCompare(a))
+    .map(day => {
+      const dayFeedings = grouped[day];
+      const durations = dayFeedings.map(f =>
+        Math.max(0, differenceInMinutes(new Date(f.ended_at), new Date(f.started_at)))
+      );
+      const totalMinutes = durations.reduce((s, d) => s + d, 0);
+      const avgMinutes = dayFeedings.length > 0 ? Math.round(totalMinutes / dayFeedings.length) : 0;
+      const breastCounts: Record<Breast, number> = { left: 0, right: 0, both: 0 };
+      for (const f of dayFeedings) breastCounts[f.breast]++;
+
+      return { day, feedings: dayFeedings, count: dayFeedings.length, totalMinutes, avgMinutes, breastCounts };
+    });
+}
+
+export default function FeedingsReportScreen() {
+  const [feedings, setFeedings] = useState<BabyFeeding[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadData = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: babyData } = await supabase
+        .from('babies')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!babyData) { setLoading(false); return; }
+
+      const { data } = await supabase
+        .from('baby_feedings')
+        .select('*')
+        .eq('baby_id', babyData.id)
+        .order('started_at', { ascending: false });
+
+      setFeedings(data || []);
+    } catch (e) {
+      console.error('Erro ao carregar relatório:', e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
+
+  if (loading) {
+    return (
+      <GradientBackground>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator color={Colors.primary} />
+        </View>
+      </GradientBackground>
+    );
+  }
+
+  const summaries = buildSummaries(feedings);
+
+  // Estatísticas gerais (últimos 7 dias)
+  const last7Days = summaries.slice(0, 7);
+  const totalLast7 = last7Days.reduce((s, d) => s + d.count, 0);
+  const avgPerDay = last7Days.length > 0 ? (totalLast7 / last7Days.length).toFixed(1) : '–';
+
+  const allDurations = feedings.map(f =>
+    Math.max(0, differenceInMinutes(new Date(f.ended_at), new Date(f.started_at)))
+  );
+  const globalAvg = allDurations.length > 0
+    ? Math.round(allDurations.reduce((s, d) => s + d, 0) / allDurations.length)
+    : 0;
+
+  const breastTotal: Record<Breast, number> = { left: 0, right: 0, both: 0 };
+  for (const f of feedings) breastTotal[f.breast]++;
+  const mostUsedBreast = feedings.length > 0
+    ? (['left', 'right', 'both'] as Breast[]).reduce((a, b) => breastTotal[a] >= breastTotal[b] ? a : b)
+    : null;
+
+  return (
+    <GradientBackground>
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)/feedings')}
+            style={styles.backButton}
+          >
+            <Text style={styles.backButtonText}>←</Text>
+          </TouchableOpacity>
+          <Text style={styles.title}>Relatórios</Text>
+          <View style={{ width: 40 }} />
+        </View>
+
+        <View style={styles.content}>
+          {feedings.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>Nenhuma mamada registrada ainda.</Text>
+            </View>
+          ) : (
+            <>
+              {/* Cards de resumo geral */}
+              <Text style={styles.sectionLabel}>Visão geral</Text>
+              <View style={styles.statsRow}>
+                <View style={styles.statCard}>
+                  <Text style={styles.statValue}>{avgPerDay}</Text>
+                  <Text style={styles.statLabel}>mamadas{'\n'}por dia{'\n'}(últ. 7 dias)</Text>
+                </View>
+                <View style={styles.statCard}>
+                  <Text style={styles.statValue}>{formatDuration(globalAvg)}</Text>
+                  <Text style={styles.statLabel}>duração{'\n'}média por{'\n'}mamada</Text>
+                </View>
+                <View style={styles.statCard}>
+                  <Text style={styles.statValue}>{mostUsedBreast ? breastLabel(mostUsedBreast) : '–'}</Text>
+                  <Text style={styles.statLabel}>seio mais{'\n'}frequente</Text>
+                </View>
+              </View>
+
+              {/* Detalhes por dia */}
+              <Text style={[styles.sectionLabel, { marginTop: 24 }]}>Por dia</Text>
+              {summaries.map(summary => (
+                <View key={summary.day} style={styles.dayCard}>
+                  {/* Cabeçalho do dia */}
+                  <View style={styles.dayCardHeader}>
+                    <Text style={styles.dayCardTitle}>{getDayLabel(summary.day)}</Text>
+                    <Text style={styles.dayCardDate}>
+                      {format(parseISO(summary.day), 'dd/MM/yyyy')}
+                    </Text>
+                  </View>
+
+                  {/* Métricas do dia */}
+                  <View style={styles.dayMetrics}>
+                    <View style={styles.dayMetricItem}>
+                      <Text style={styles.dayMetricValue}>{summary.count}</Text>
+                      <Text style={styles.dayMetricLabel}>mamadas</Text>
+                    </View>
+                    <View style={styles.dayMetricDivider} />
+                    <View style={styles.dayMetricItem}>
+                      <Text style={styles.dayMetricValue}>{formatDuration(summary.avgMinutes)}</Text>
+                      <Text style={styles.dayMetricLabel}>média</Text>
+                    </View>
+                    <View style={styles.dayMetricDivider} />
+                    <View style={styles.dayMetricItem}>
+                      <Text style={styles.dayMetricValue}>{formatDuration(summary.totalMinutes)}</Text>
+                      <Text style={styles.dayMetricLabel}>total</Text>
+                    </View>
+                  </View>
+
+                  {/* Distribuição de seios */}
+                  <View style={styles.breastDistRow}>
+                    {(['left', 'right', 'both'] as Breast[]).map(b => (
+                      summary.breastCounts[b] > 0 && (
+                        <View key={b} style={styles.breastDistItem}>
+                          <View style={[styles.breastDot, b === 'both' && styles.breastDotBoth]} />
+                          <Text style={styles.breastDistText}>
+                            {breastLabel(b)}: <Text style={styles.breastDistCount}>{summary.breastCounts[b]}x</Text>
+                          </Text>
+                        </View>
+                      )
+                    ))}
+                  </View>
+
+                  {/* Lista de mamadas do dia */}
+                  <View style={styles.feedingsList}>
+                    {summary.feedings.map((f, i) => {
+                      const dur = Math.max(0, differenceInMinutes(new Date(f.ended_at), new Date(f.started_at)));
+                      return (
+                        <View key={f.id} style={[styles.feedingRow, i === 0 && styles.feedingRowFirst]}>
+                          <Text style={styles.feedingRowTime}>
+                            {format(new Date(f.started_at), 'HH:mm')} → {format(new Date(f.ended_at), 'HH:mm')}
+                          </Text>
+                          <Text style={styles.feedingRowDur}>{formatDuration(dur)}</Text>
+                          <Text style={styles.feedingRowBreast}>{breastLabel(f.breast)}</Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                </View>
+              ))}
+            </>
+          )}
+        </View>
+      </ScrollView>
+    </GradientBackground>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: 'transparent' },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 120 },
+
+  // Header
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 18,
+    paddingTop: 60,
+    paddingBottom: 16,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.glass,
+    borderWidth: 1,
+    borderColor: Colors.glassBorder,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  backButtonText: { fontSize: 20, color: Colors.text, fontWeight: '600' },
+  title: { fontSize: 22, fontWeight: '800', color: Colors.text, letterSpacing: -0.3 },
+
+  // Content
+  content: { paddingHorizontal: 18, paddingBottom: 40 },
+
+  emptyState: { alignItems: 'center', paddingVertical: 60 },
+  emptyStateText: { fontSize: 16, fontWeight: '500', color: Colors.textSecondary },
+
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: Colors.textTertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 12,
+  },
+
+  // Stats row
+  statsRow: { flexDirection: 'row', gap: 10 },
+  statCard: {
+    flex: 1,
+    backgroundColor: Colors.cardWarm,
+    borderRadius: 20,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: Colors.borderWarm,
+    shadowColor: Colors.shadowWarm,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 12,
+    elevation: 3,
+    alignItems: 'center',
+  },
+  statValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.primary,
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  statLabel: {
+    fontSize: 11,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    fontWeight: '500',
+    lineHeight: 16,
+  },
+
+  // Day card
+  dayCard: {
+    backgroundColor: Colors.cardWarm,
+    borderRadius: 20,
+    padding: 18,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: Colors.borderWarm,
+    shadowColor: Colors.shadowWarm,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 14,
+    elevation: 3,
+  },
+  dayCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  dayCardTitle: { fontSize: 17, fontWeight: '700', color: Colors.text },
+  dayCardDate: { fontSize: 13, color: Colors.textTertiary, fontWeight: '500' },
+
+  // Day metrics
+  dayMetrics: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.glassBackground,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: Colors.glassBorder,
+  },
+  dayMetricItem: { flex: 1, alignItems: 'center' },
+  dayMetricValue: { fontSize: 16, fontWeight: '700', color: Colors.primary, marginBottom: 3 },
+  dayMetricLabel: { fontSize: 11, color: Colors.textSecondary, fontWeight: '500' },
+  dayMetricDivider: { width: 1, height: 32, backgroundColor: Colors.neutral },
+
+  // Breast distribution
+  breastDistRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 14 },
+  breastDistItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  breastDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.primary,
+  },
+  breastDotBoth: { backgroundColor: Colors.secondary },
+  breastDistText: { fontSize: 13, color: Colors.textSecondary, fontWeight: '500' },
+  breastDistCount: { fontWeight: '700', color: Colors.text },
+
+  // Feedings list
+  feedingsList: { borderTopWidth: 1, borderTopColor: Colors.neutral },
+  feedingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 9,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.neutral,
+  },
+  feedingRowFirst: { borderTopWidth: 0 },
+  feedingRowTime: { flex: 1.5, fontSize: 13, fontWeight: '600', color: Colors.text },
+  feedingRowDur: { flex: 1, fontSize: 13, fontWeight: '500', color: Colors.textSecondary },
+  feedingRowBreast: { flex: 1, fontSize: 13, fontWeight: '500', color: Colors.textSecondary, textAlign: 'right' },
+});

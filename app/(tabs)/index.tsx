@@ -382,6 +382,12 @@ export default function HomeScreen() {
               <Text style={styles.menuItemText}>Crescimento (peso e altura)</Text>
             </TouchableOpacity>
             <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => { setShowBabyMenu(false); router.push('/(tabs)/feedings'); }}
+            >
+              <Text style={styles.menuItemText}>Controle de mamadas</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
               style={[styles.menuItem, styles.menuItemCancel]}
               onPress={() => setShowBabyMenu(false)}
             >
