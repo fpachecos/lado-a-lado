@@ -44,6 +44,8 @@ export default function MainLayout() {
       <Stack.Screen name="companion-activities" />
       <Stack.Screen name="profile" />
       <Stack.Screen name="weight" />
+      <Stack.Screen name="feedings" />
+      <Stack.Screen name="feedings-report" />
     </Stack>
   );
 }
