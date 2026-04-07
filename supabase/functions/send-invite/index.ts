@@ -56,28 +56,56 @@ Deno.serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     })
 
-    // Envia convite via Supabase Auth
-    const { data: inviteData, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
-      inviteeEmail,
-      { redirectTo: 'ladoalado://convite' }
-    )
+    // Busca o usuário existente (se houver) para saber se é confirmado ou não
+    const { data: existingAuthUser } = await adminClient
+      .from('auth.users')
+      .select('id, email_confirmed_at')
+      .eq('email', inviteeEmail)
+      .maybeSingle()
 
-    if (inviteError) {
-      // Se o usuário já existe, apenas cria o registro do convite
-      if (!inviteError.message.includes('already been registered')) {
+    let inviteUserId: string | null = null
+
+    if (existingAuthUser) {
+      if (!existingAuthUser.email_confirmed_at) {
+        // Usuário existe mas nunca ativou o convite (sem senha definida).
+        // Deletar e recriar para que o Supabase reenvie o e-mail de convite.
+        await adminClient.auth.admin.deleteUser(existingAuthUser.id)
+
+        const { data: newInvite, error: newInviteError } = await adminClient.auth.admin.inviteUserByEmail(
+          inviteeEmail,
+          { redirectTo: 'ladoalado://convite' }
+        )
+
+        if (newInviteError) {
+          console.error('Erro ao recriar convite:', newInviteError)
+          return new Response(JSON.stringify({ error: newInviteError.message }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          })
+        }
+
+        inviteUserId = newInvite?.user?.id ?? null
+      } else {
+        // Usuário já confirmado — já tem acesso, apenas registra o convite no DB.
+        inviteUserId = existingAuthUser.id
+      }
+    } else {
+      // Usuário novo — convida normalmente.
+      const { data: inviteData, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
+        inviteeEmail,
+        { redirectTo: 'ladoalado://convite' }
+      )
+
+      if (inviteError) {
+        console.error('Erro ao convidar usuário:', inviteError)
         return new Response(JSON.stringify({ error: inviteError.message }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
-    }
 
-    // Busca o invitee_id se já existir
-    const { data: existingUser } = await adminClient
-      .from('auth.users')
-      .select('id')
-      .eq('email', inviteeEmail)
-      .single()
+      inviteUserId = inviteData?.user?.id ?? null
+    }
 
     // Registra o convite na tabela user_invites (schema ladoalado)
     const { error: dbError } = await adminLadoALadoClient
@@ -86,7 +114,7 @@ Deno.serve(async (req) => {
         {
           inviter_id: user.id,
           invitee_email: inviteeEmail,
-          invitee_id: inviteData?.user?.id ?? existingUser?.id ?? null,
+          invitee_id: inviteUserId,
           status: 'pending',
           updated_at: new Date().toISOString(),
         },

@@ -11,15 +11,43 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router } from 'expo-router';
+import * as Linking from 'expo-linking';
 import { supabase } from '@/lib/supabase';
 import { Colors } from '@/constants/Colors';
 import { GradientBackground } from '@/components/GradientBackground';
 
 type Step = 'verifying' | 'set-password' | 'error';
 
+function parseInviteUrl(url: string): { token_hash?: string; type?: string; access_token?: string; refresh_token?: string } {
+  try {
+    // Parse query params (?token_hash=...&type=...)
+    const queryIdx = url.indexOf('?');
+    const hashIdx = url.indexOf('#');
+
+    const queryStr = queryIdx !== -1
+      ? url.slice(queryIdx + 1, hashIdx !== -1 ? hashIdx : undefined)
+      : '';
+    const hashStr = hashIdx !== -1 ? url.slice(hashIdx + 1) : '';
+
+    const result: Record<string, string> = {};
+    for (const part of [queryStr, hashStr]) {
+      if (!part) continue;
+      for (const pair of part.split('&')) {
+        const eqIdx = pair.indexOf('=');
+        if (eqIdx === -1) continue;
+        const key = decodeURIComponent(pair.slice(0, eqIdx));
+        const value = decodeURIComponent(pair.slice(eqIdx + 1));
+        result[key] = value;
+      }
+    }
+    return result;
+  } catch {
+    return {};
+  }
+}
+
 export default function ConviteScreen() {
-  const { token_hash, type } = useLocalSearchParams<{ token_hash: string; type: string }>();
   const [step, setStep] = useState<Step>('verifying');
   const [errorMsg, setErrorMsg] = useState('');
   const [password, setPassword] = useState('');
@@ -27,26 +55,50 @@ export default function ConviteScreen() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!token_hash) {
-      setErrorMsg('Link de convite inválido ou expirado.');
-      setStep('error');
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        processInviteUrl(url);
+      } else {
+        setErrorMsg('Link de convite inválido ou expirado.');
+        setStep('error');
+      }
+    });
+  }, []);
+
+  const processInviteUrl = async (url: string) => {
+    const params = parseInviteUrl(url);
+
+    // Fluxo PKCE: token_hash nos query params
+    if (params.token_hash) {
+      const tokenHash = params.token_hash;
+      const otpType = (params.type ?? 'invite') as any;
+      const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: otpType });
+      if (error) {
+        setErrorMsg('Link de convite inválido ou expirado. Peça um novo convite.');
+        setStep('error');
+      } else {
+        setStep('set-password');
+      }
       return;
     }
-    verifyToken();
-  }, [token_hash]);
 
-  const verifyToken = async () => {
-    const { error } = await supabase.auth.verifyOtp({
-      token_hash,
-      type: (type as any) ?? 'invite',
-    });
-
-    if (error) {
-      setErrorMsg('Link de convite inválido ou expirado. Peça um novo convite.');
-      setStep('error');
-    } else {
-      setStep('set-password');
+    // Fluxo implícito: access_token no hash fragment
+    if (params.access_token && params.refresh_token) {
+      const { error } = await supabase.auth.setSession({
+        access_token: params.access_token,
+        refresh_token: params.refresh_token,
+      });
+      if (error) {
+        setErrorMsg('Link de convite inválido ou expirado. Peça um novo convite.');
+        setStep('error');
+      } else {
+        setStep('set-password');
+      }
+      return;
     }
+
+    setErrorMsg('Link de convite inválido ou expirado.');
+    setStep('error');
   };
 
   const handleSetPassword = async () => {

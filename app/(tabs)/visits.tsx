@@ -24,7 +24,8 @@ interface SlotWithBookings extends VisitSlot {
 
 export default function VisitsScreen() {
   const { effectiveUserId } = useUserContext();
-  const { scheduleId: initialScheduleId } = useLocalSearchParams<{ scheduleId: string }>();
+  const { scheduleId: rawScheduleId } = useLocalSearchParams<{ scheduleId: string }>();
+  const initialScheduleId = Array.isArray(rawScheduleId) ? rawScheduleId[0] : rawScheduleId;
 
   const [schedules, setSchedules] = useState<VisitSchedule[]>([]);
   const [selectedScheduleId, setSelectedScheduleId] = useState<string | null>(initialScheduleId ?? null);
