@@ -32,6 +32,7 @@ export default function ProfileScreen() {
   // ── Convites ────────────────────────────────────────
   const [inviteEmail, setInviteEmail] = useState('');
   const [sendingInvite, setSendingInvite] = useState(false);
+  const [resendingInviteId, setResendingInviteId] = useState<string | null>(null);
   const [invites, setInvites] = useState<UserInvite[]>([]);
   const [loadingInvites, setLoadingInvites] = useState(false);
 
@@ -106,6 +107,32 @@ export default function ProfileScreen() {
       showAlert('Erro', err.message || 'Não foi possível enviar o convite.');
     } finally {
       setSendingInvite(false);
+    }
+  };
+
+  const handleResendInvite = async (invite: UserInvite) => {
+    setResendingInviteId(invite.id);
+    try {
+      const { error } = await supabase.functions.invoke('send-invite', {
+        body: { inviteeEmail: invite.invitee_email },
+      });
+
+      if (error) {
+        let msg = 'Não foi possível reenviar o convite.';
+        try {
+          const parsed = await (error as any).context?.json?.();
+          if (parsed?.error) msg = parsed.error;
+        } catch {
+          if (error.message) msg = error.message;
+        }
+        throw new Error(msg);
+      }
+
+      showAlert('Convite reenviado!', `O convite foi reenviado para ${invite.invitee_email}.`);
+    } catch (err: any) {
+      showAlert('Erro', err.message || 'Não foi possível reenviar o convite.');
+    } finally {
+      setResendingInviteId(null);
     }
   };
 
@@ -308,12 +335,26 @@ export default function ProfileScreen() {
                       </Text>
                     </View>
                   </View>
-                  <TouchableOpacity
-                    style={styles.revokeButton}
-                    onPress={() => handleRevokeInvite(invite)}
-                  >
-                    <Text style={styles.revokeButtonText}>Revogar</Text>
-                  </TouchableOpacity>
+                  <View style={styles.inviteActions}>
+                    {invite.status === 'pending' && (
+                      <TouchableOpacity
+                        style={styles.resendButton}
+                        onPress={() => handleResendInvite(invite)}
+                        disabled={resendingInviteId === invite.id}
+                      >
+                        {resendingInviteId === invite.id
+                          ? <ActivityIndicator color={Colors.primary} size="small" />
+                          : <Text style={styles.resendButtonText}>Reenviar</Text>
+                        }
+                      </TouchableOpacity>
+                    )}
+                    <TouchableOpacity
+                      style={styles.revokeButton}
+                      onPress={() => handleRevokeInvite(invite)}
+                    >
+                      <Text style={styles.revokeButtonText}>Revogar</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               ))}
             </View>
@@ -698,6 +739,25 @@ const styles = StyleSheet.create({
   },
   inviteStatusTextAccepted: {
     color: Colors.success,
+  },
+  inviteActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  resendButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.borderPrimary,
+    minWidth: 32,
+    alignItems: 'center',
+  },
+  resendButtonText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.primary,
   },
   revokeButton: {
     paddingHorizontal: 12,
