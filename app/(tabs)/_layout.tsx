@@ -1,8 +1,8 @@
 import { Stack } from 'expo-router';
-import { Colors } from '@/constants/Colors';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { router } from 'expo-router';
+import { UserProvider } from '@/lib/user-context';
 
 export default function MainLayout() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -35,18 +35,20 @@ export default function MainLayout() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
-      <Stack.Screen name="baby" />
-      <Stack.Screen name="schedules" />
-      <Stack.Screen name="visits" />
-      <Stack.Screen name="companion" />
-      <Stack.Screen name="companion-activities" />
-      <Stack.Screen name="profile" />
-      <Stack.Screen name="weight" />
-      <Stack.Screen name="feedings" />
-      <Stack.Screen name="feedings-report" />
-    </Stack>
+    <UserProvider>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="baby" />
+        <Stack.Screen name="schedules" />
+        <Stack.Screen name="visits" />
+        <Stack.Screen name="companion" />
+        <Stack.Screen name="companion-activities" />
+        <Stack.Screen name="profile" />
+        <Stack.Screen name="weight" />
+        <Stack.Screen name="feedings" />
+        <Stack.Screen name="feedings-report" />
+      </Stack>
+    </UserProvider>
   );
 }
 

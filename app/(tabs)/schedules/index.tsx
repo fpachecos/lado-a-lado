@@ -17,8 +17,11 @@ import { BlurView } from 'expo-blur';
 import { format, parse } from 'date-fns';
 import * as Clipboard from 'expo-clipboard';
 import { GradientBackground } from '@/components/GradientBackground';
+import { useUserContext } from '@/lib/user-context';
 
 export default function SchedulesScreen() {
+  const { effectiveUserId } = useUserContext();
+
   const [schedules, setSchedules] = useState<VisitSchedule[]>([]);
   const [filteredSchedules, setFilteredSchedules] = useState<VisitSchedule[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -34,18 +37,16 @@ export default function SchedulesScreen() {
   };
 
   useEffect(() => {
-    loadSchedules();
-  }, []);
+    if (effectiveUserId) loadSchedules();
+  }, [effectiveUserId]);
 
   const loadSchedules = async () => {
+    if (!effectiveUserId) return;
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
       const { data, error } = await supabase
         .from('visit_schedules')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', effectiveUserId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;

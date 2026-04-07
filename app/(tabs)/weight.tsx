@@ -28,6 +28,7 @@ import DatePicker from '@/components/DatePicker';
 import { BlurView } from 'expo-blur';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useUserContext } from '@/lib/user-context';
 
 // ─── Dados OMS: Peso por idade (0–24 meses) ───────────────────────────────────
 // https://www.who.int/tools/child-growth-standards/standards/weight-for-age
@@ -253,6 +254,7 @@ const MIN_RANGE = 1;
 type ActiveTab = 'weight' | 'height';
 
 export default function GrowthScreen() {
+  const { effectiveUserId } = useUserContext();
   const { width } = useWindowDimensions();
   const chartWidth = width - 40;
   const drawW = chartWidth - PAD.left - PAD.right;
@@ -350,12 +352,10 @@ export default function GrowthScreen() {
   };
 
   const loadData = useCallback(async () => {
+    if (!effectiveUserId) return;
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
       const { data: babyData, error: babyError } = await supabase
-        .from('babies').select('*').eq('user_id', user.id).single();
+        .from('babies').select('*').eq('user_id', effectiveUserId).single();
       if (babyError && babyError.code !== 'PGRST116') throw babyError;
       if (!babyData) return;
       setBaby(babyData);
@@ -371,7 +371,7 @@ export default function GrowthScreen() {
     } finally {
       setInitialLoading(false);
     }
-  }, []);
+  }, [effectiveUserId]);
 
   useEffect(() => { loadData(); }, [loadData]);
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -16,17 +16,27 @@ import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { Colors } from '@/constants/Colors';
+import { UserInvite } from '@/types/database';
 
 export default function ProfileScreen() {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(true);
 
+  // ── Senha ──────────────────────────────────────────
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
 
+  // ── Convites ────────────────────────────────────────
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [sendingInvite, setSendingInvite] = useState(false);
+  const [resendingInviteId, setResendingInviteId] = useState<string | null>(null);
+  const [invites, setInvites] = useState<UserInvite[]>([]);
+  const [loadingInvites, setLoadingInvites] = useState(false);
+
+  // ── Excluir conta ──────────────────────────────────
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
@@ -41,8 +51,125 @@ export default function ProfileScreen() {
       if (!user) return;
       setEmail(user.email || '');
       setName(user.user_metadata?.full_name || user.user_metadata?.name || '');
+      loadInvites(user.id);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadInvites = useCallback(async (uid: string) => {
+    setLoadingInvites(true);
+    try {
+      const { data } = await supabase
+        .from('user_invites')
+        .select('*')
+        .eq('inviter_id', uid)
+        .in('status', ['pending', 'accepted'])
+        .order('created_at', { ascending: false });
+
+      setInvites((data as UserInvite[]) ?? []);
+    } finally {
+      setLoadingInvites(false);
+    }
+  }, []);
+
+  const handleSendInvite = async () => {
+    const trimmed = inviteEmail.trim().toLowerCase();
+    if (!trimmed || !trimmed.includes('@')) {
+      showAlert('E-mail inválido', 'Digite um endereço de e-mail válido.');
+      return;
+    }
+
+    setSendingInvite(true);
+    try {
+      const { error } = await supabase.functions.invoke('send-invite', {
+        body: { inviteeEmail: trimmed },
+      });
+
+      if (error) {
+        // Edge Function errors come back as FunctionsHttpError with a JSON body
+        let msg = 'Não foi possível enviar o convite.';
+        try {
+          const parsed = await (error as any).context?.json?.();
+          if (parsed?.error) msg = parsed.error;
+        } catch {
+          if (error.message) msg = error.message;
+        }
+        throw new Error(msg);
+      }
+
+      setInviteEmail('');
+      showAlert('Convite enviado!', `Um e-mail de convite foi enviado para ${trimmed}.`);
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) loadInvites(user.id);
+    } catch (err: any) {
+      showAlert('Erro', err.message || 'Não foi possível enviar o convite.');
+    } finally {
+      setSendingInvite(false);
+    }
+  };
+
+  const handleResendInvite = async (invite: UserInvite) => {
+    setResendingInviteId(invite.id);
+    try {
+      const { error } = await supabase.functions.invoke('send-invite', {
+        body: { inviteeEmail: invite.invitee_email },
+      });
+
+      if (error) {
+        let msg = 'Não foi possível reenviar o convite.';
+        try {
+          const parsed = await (error as any).context?.json?.();
+          if (parsed?.error) msg = parsed.error;
+        } catch {
+          if (error.message) msg = error.message;
+        }
+        throw new Error(msg);
+      }
+
+      showAlert('Convite reenviado!', `O convite foi reenviado para ${invite.invitee_email}.`);
+    } catch (err: any) {
+      showAlert('Erro', err.message || 'Não foi possível reenviar o convite.');
+    } finally {
+      setResendingInviteId(null);
+    }
+  };
+
+  const handleRevokeInvite = async (invite: UserInvite) => {
+    const confirmRevoke = () => {
+      revokeInvite(invite.id);
+    };
+
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm(
+        `Revogar acesso de ${invite.invitee_email}?\n\nEssa pessoa não poderá mais acessar os dados da conta.`,
+      );
+      if (confirmed) revokeInvite(invite.id);
+    } else {
+      Alert.alert(
+        'Revogar acesso',
+        `Revogar acesso de ${invite.invitee_email}?\n\nEssa pessoa não poderá mais acessar os dados da conta.`,
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Revogar', style: 'destructive', onPress: confirmRevoke },
+        ],
+      );
+    }
+  };
+
+  const revokeInvite = async (inviteId: string) => {
+    try {
+      const { error } = await supabase
+        .from('user_invites')
+        .update({ status: 'revoked' })
+        .eq('id', inviteId);
+
+      if (error) throw error;
+
+      setInvites((prev) => prev.filter((i) => i.id !== inviteId));
+    } catch (err: any) {
+      showAlert('Erro', err.message || 'Não foi possível revogar o convite.');
     }
   };
 
@@ -153,6 +280,87 @@ export default function ProfileScreen() {
           ) : null}
         </View>
 
+        {/* Convites */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Convites</Text>
+          <Text style={styles.inviteDescription}>
+            Convide alguém pelo e-mail para acessar o app com os dados da sua conta.
+          </Text>
+
+          {/* Formulário de novo convite */}
+          <View style={styles.inviteForm}>
+            <TextInput
+              style={styles.inviteInput}
+              value={inviteEmail}
+              onChangeText={setInviteEmail}
+              placeholder="E-mail do convidado"
+              placeholderTextColor={Colors.textTertiary}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <TouchableOpacity
+              style={[styles.inviteButton, sendingInvite && styles.inviteButtonDisabled]}
+              onPress={handleSendInvite}
+              disabled={sendingInvite}
+            >
+              {sendingInvite
+                ? <ActivityIndicator color="#fff" size="small" />
+                : <Text style={styles.inviteButtonText}>Convidar</Text>
+              }
+            </TouchableOpacity>
+          </View>
+
+          {/* Lista de convites */}
+          {loadingInvites ? (
+            <ActivityIndicator color={Colors.primary} style={{ marginTop: 12 }} />
+          ) : invites.length > 0 ? (
+            <View style={styles.invitesList}>
+              <Text style={styles.invitesListTitle}>Acessos ativos e pendentes</Text>
+              {invites.map((invite) => (
+                <View key={invite.id} style={styles.inviteItem}>
+                  <View style={styles.inviteItemInfo}>
+                    <Text style={styles.inviteItemEmail} numberOfLines={1}>
+                      {invite.invitee_email}
+                    </Text>
+                    <View style={[
+                      styles.inviteStatusBadge,
+                      invite.status === 'accepted' && styles.inviteStatusAccepted,
+                    ]}>
+                      <Text style={[
+                        styles.inviteStatusText,
+                        invite.status === 'accepted' && styles.inviteStatusTextAccepted,
+                      ]}>
+                        {invite.status === 'accepted' ? 'Ativo' : 'Pendente'}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.inviteActions}>
+                    {invite.status === 'pending' && (
+                      <TouchableOpacity
+                        style={styles.resendButton}
+                        onPress={() => handleResendInvite(invite)}
+                        disabled={resendingInviteId === invite.id}
+                      >
+                        {resendingInviteId === invite.id
+                          ? <ActivityIndicator color={Colors.primary} size="small" />
+                          : <Text style={styles.resendButtonText}>Reenviar</Text>
+                        }
+                      </TouchableOpacity>
+                    )}
+                    <TouchableOpacity
+                      style={styles.revokeButton}
+                      onPress={() => handleRevokeInvite(invite)}
+                    >
+                      <Text style={styles.revokeButtonText}>Revogar</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+            </View>
+          ) : null}
+        </View>
+
         {/* Senha */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Segurança</Text>
@@ -241,62 +449,62 @@ export default function ProfileScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={{ flex: 1 }}
         >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => !deleting && setShowDeleteModal(false)}
-        >
-          <TouchableOpacity activeOpacity={1} onPress={() => {}}>
-          <BlurView intensity={80} tint="light" style={styles.modalContent}>
-            <View style={styles.modalHandle} />
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => !deleting && setShowDeleteModal(false)}
+          >
+            <TouchableOpacity activeOpacity={1} onPress={() => {}}>
+              <BlurView intensity={80} tint="light" style={styles.modalContent}>
+                <View style={styles.modalHandle} />
 
-            <Text style={styles.modalTitle}>Excluir conta</Text>
-            <Text style={styles.modalDescription}>
-              Esta ação é irreversível. Todos os seus dados serão excluídos permanentemente.
-            </Text>
-            <Text style={styles.modalDescription}>
-              Para confirmar, digite{' '}
-              <Text style={styles.modalConfirmWord}>excluir</Text>
-              {' '}abaixo:
-            </Text>
+                <Text style={styles.modalTitle}>Excluir conta</Text>
+                <Text style={styles.modalDescription}>
+                  Esta ação é irreversível. Todos os seus dados serão excluídos permanentemente.
+                </Text>
+                <Text style={styles.modalDescription}>
+                  Para confirmar, digite{' '}
+                  <Text style={styles.modalConfirmWord}>excluir</Text>
+                  {' '}abaixo:
+                </Text>
 
-            <TextInput
-              style={styles.confirmInput}
-              value={deleteConfirmText}
-              onChangeText={setDeleteConfirmText}
-              placeholder="excluir"
-              placeholderTextColor={Colors.textTertiary}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
+                <TextInput
+                  style={styles.confirmInput}
+                  value={deleteConfirmText}
+                  onChangeText={setDeleteConfirmText}
+                  placeholder="excluir"
+                  placeholderTextColor={Colors.textTertiary}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
 
-            <TouchableOpacity
-              style={[
-                styles.confirmDeleteButton,
-                (deleting || deleteConfirmText.toLowerCase() !== 'excluir') && styles.confirmDeleteButtonDisabled,
-              ]}
-              onPress={handleDeleteAccount}
-              disabled={deleting || deleteConfirmText.toLowerCase() !== 'excluir'}
-            >
-              {deleting
-                ? <ActivityIndicator color="#fff" size="small" />
-                : <Text style={styles.confirmDeleteButtonText}>Excluir definitivamente</Text>
-              }
+                <TouchableOpacity
+                  style={[
+                    styles.confirmDeleteButton,
+                    (deleting || deleteConfirmText.toLowerCase() !== 'excluir') && styles.confirmDeleteButtonDisabled,
+                  ]}
+                  onPress={handleDeleteAccount}
+                  disabled={deleting || deleteConfirmText.toLowerCase() !== 'excluir'}
+                >
+                  {deleting
+                    ? <ActivityIndicator color="#fff" size="small" />
+                    : <Text style={styles.confirmDeleteButtonText}>Excluir definitivamente</Text>
+                  }
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.modalCancelButton}
+                  onPress={() => {
+                    setShowDeleteModal(false);
+                    setDeleteConfirmText('');
+                  }}
+                  disabled={deleting}
+                >
+                  <Text style={styles.modalCancelText}>Cancelar</Text>
+                </TouchableOpacity>
+              </BlurView>
             </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.modalCancelButton}
-              onPress={() => {
-                setShowDeleteModal(false);
-                setDeleteConfirmText('');
-              }}
-              disabled={deleting}
-            >
-              <Text style={styles.modalCancelText}>Cancelar</Text>
-            </TouchableOpacity>
-          </BlurView>
           </TouchableOpacity>
-        </TouchableOpacity>
         </KeyboardAvoidingView>
       </Modal>
     </ScrollView>
@@ -437,6 +645,131 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     maxWidth: '60%',
     textAlign: 'right',
+  },
+
+  // ── Invites ──
+  inviteDescription: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    lineHeight: 19,
+    marginBottom: 14,
+  },
+  inviteForm: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
+  },
+  inviteInput: {
+    flex: 1,
+    backgroundColor: Colors.glass,
+    borderRadius: 12,
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+    fontSize: 14,
+    color: Colors.text,
+    borderWidth: 1,
+    borderColor: Colors.glassBorder,
+  },
+  inviteButton: {
+    backgroundColor: Colors.primary,
+    borderRadius: 12,
+    paddingVertical: 11,
+    paddingHorizontal: 18,
+    alignItems: 'center',
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  inviteButtonDisabled: {
+    opacity: 0.6,
+  },
+  inviteButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  invitesList: {
+    marginTop: 18,
+  },
+  invitesListTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.textTertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginBottom: 10,
+  },
+  inviteItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: Colors.borderWarm,
+    gap: 10,
+  },
+  inviteItemInfo: {
+    flex: 1,
+    gap: 4,
+  },
+  inviteItemEmail: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.text,
+  },
+  inviteStatusBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 99,
+    backgroundColor: 'rgba(160, 144, 128, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(160, 144, 128, 0.3)',
+  },
+  inviteStatusAccepted: {
+    backgroundColor: 'rgba(24, 133, 74, 0.1)',
+    borderColor: 'rgba(24, 133, 74, 0.3)',
+  },
+  inviteStatusText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.textTertiary,
+  },
+  inviteStatusTextAccepted: {
+    color: Colors.success,
+  },
+  inviteActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  resendButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.borderPrimary,
+    minWidth: 32,
+    alignItems: 'center',
+  },
+  resendButtonText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.primary,
+  },
+  revokeButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(224, 52, 40, 0.3)',
+  },
+  revokeButtonText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.error,
   },
 
   // ── Action row ──

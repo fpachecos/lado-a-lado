@@ -15,6 +15,7 @@ import { VisitSchedule, VisitSlot, VisitBooking } from '@/types/database';
 import { format, parse } from 'date-fns';
 import { BlurView } from 'expo-blur';
 import { GradientBackground } from '@/components/GradientBackground';
+import { useUserContext } from '@/lib/user-context';
 
 interface SlotWithBookings extends VisitSlot {
   bookings: VisitBooking[];
@@ -22,14 +23,16 @@ interface SlotWithBookings extends VisitSlot {
 }
 
 export default function VisitsScreen() {
+  const { effectiveUserId } = useUserContext();
+
   const [schedules, setSchedules] = useState<VisitSchedule[]>([]);
   const [selectedScheduleId, setSelectedScheduleId] = useState<string | null>(null);
   const [slotsWithBookings, setSlotsWithBookings] = useState<SlotWithBookings[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadSchedules();
-  }, []);
+    if (effectiveUserId) loadSchedules();
+  }, [effectiveUserId]);
 
   useEffect(() => {
     if (selectedScheduleId) {
@@ -38,14 +41,12 @@ export default function VisitsScreen() {
   }, [selectedScheduleId]);
 
   const loadSchedules = async () => {
+    if (!effectiveUserId) return;
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
       const { data, error } = await supabase
         .from('visit_schedules')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', effectiveUserId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;

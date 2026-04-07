@@ -20,8 +20,11 @@ import { format } from 'date-fns';
 import DatePicker from '@/components/DatePicker';
 import MarkdownEditor from '@/components/MarkdownEditor';
 import { GradientBackground } from '@/components/GradientBackground';
+import { useUserContext } from '@/lib/user-context';
 
 export default function NewScheduleScreen() {
+  const { effectiveUserId } = useUserContext();
+
   const [baby, setBaby] = useState<Baby | null>(null);
   const [isPremium, setIsPremium] = useState(false);
   const [scheduleName, setScheduleName] = useState('');
@@ -35,15 +38,13 @@ export default function NewScheduleScreen() {
   }, []);
 
   const loadData = async () => {
+    if (!effectiveUserId) return;
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
       // Carregar bebê
       const { data: babyData } = await supabase
         .from('babies')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', effectiveUserId)
         .single();
 
       setBaby(babyData);
@@ -83,14 +84,13 @@ export default function NewScheduleScreen() {
 
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!effectiveUserId) return;
 
       // Criar agenda
       const { data: schedule, error: scheduleError } = await supabase
         .from('visit_schedules')
         .insert({
-          user_id: user.id,
+          user_id: effectiveUserId,
           name: scheduleName.trim() || null,
           start_date: format(startDate, 'yyyy-MM-dd'),
           end_date: format(endDate, 'yyyy-MM-dd'),

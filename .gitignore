@@ -31,8 +31,8 @@ web/build/
 web/*.tsbuildinfo
 web/.next/cache/
 
-# Supabase local
-supabase/
+# Supabase local (apenas dados temporários e segredos)
+supabase/.temp/
 
 # iOS native (gerado por expo prebuild)
 ios/
