@@ -360,21 +360,9 @@ export default function HomeScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.menuItem}
-              onPress={() => { setShowBabyMenu(false); router.push('/(tabs)/schedules/new'); }}
-            >
-              <Text style={styles.menuItemText}>Criar agenda de visitas</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.menuItem}
               onPress={() => { setShowBabyMenu(false); router.push('/(tabs)/schedules'); }}
             >
-              <Text style={styles.menuItemText}>Ver agendas existentes</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => { setShowBabyMenu(false); router.push('/(tabs)/visits'); }}
-            >
-              <Text style={styles.menuItemText}>Acompanhar visitas</Text>
+              <Text style={styles.menuItemText}>Ver agendas de visitas</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.menuItem}
