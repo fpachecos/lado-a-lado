@@ -9,7 +9,8 @@ import {
   TextInput,
   Platform,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Colors } from '@/constants/Colors';
 import { VisitSchedule } from '@/types/database';
@@ -36,9 +37,11 @@ export default function SchedulesScreen() {
     }
   };
 
-  useEffect(() => {
-    if (effectiveUserId) loadSchedules();
-  }, [effectiveUserId]);
+  useFocusEffect(
+    useCallback(() => {
+      if (effectiveUserId) loadSchedules();
+    }, [effectiveUserId])
+  );
 
   const loadSchedules = async () => {
     if (!effectiveUserId) return;
@@ -197,15 +200,26 @@ export default function SchedulesScreen() {
                     </TouchableOpacity>
                   </View>
                 </View>
-                <TouchableOpacity
-                  style={styles.deleteButton}
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    handleDelete(schedule.id);
-                  }}
-                >
-                  <Text style={styles.deleteButtonText}>Excluir</Text>
-                </TouchableOpacity>
+                <View style={styles.cardActions}>
+                  <TouchableOpacity
+                    style={styles.visitsButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      router.push(`/(tabs)/visits?scheduleId=${schedule.id}`);
+                    }}
+                  >
+                    <Text style={styles.visitsButtonText}>👥 Acompanhar visitas</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleDelete(schedule.id);
+                    }}
+                  >
+                    <Text style={styles.deleteButtonText}>Excluir</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </TouchableOpacity>
           ))
@@ -370,6 +384,24 @@ const styles = StyleSheet.create({
   copyButtonText: {
     fontSize: 16,
     color: Colors.textSecondary,
+  },
+  cardActions: {
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: 6,
+  },
+  visitsButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    backgroundColor: Colors.cardMint,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.borderMint,
+  },
+  visitsButtonText: {
+    color: Colors.text,
+    fontSize: 13,
+    fontWeight: '600',
   },
   deleteButton: {
     paddingVertical: 8,

@@ -8,7 +8,7 @@ import {
   Alert,
   TextInput,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { Colors } from '@/constants/Colors';
 import { VisitSchedule, VisitSlot, VisitBooking } from '@/types/database';
@@ -24,9 +24,10 @@ interface SlotWithBookings extends VisitSlot {
 
 export default function VisitsScreen() {
   const { effectiveUserId } = useUserContext();
+  const { scheduleId: initialScheduleId } = useLocalSearchParams<{ scheduleId: string }>();
 
   const [schedules, setSchedules] = useState<VisitSchedule[]>([]);
-  const [selectedScheduleId, setSelectedScheduleId] = useState<string | null>(null);
+  const [selectedScheduleId, setSelectedScheduleId] = useState<string | null>(initialScheduleId ?? null);
   const [slotsWithBookings, setSlotsWithBookings] = useState<SlotWithBookings[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -52,7 +53,7 @@ export default function VisitsScreen() {
       if (error) throw error;
 
       setSchedules(data || []);
-      if (data && data.length > 0 && !selectedScheduleId) {
+      if (data && data.length > 0 && !selectedScheduleId && !initialScheduleId) {
         setSelectedScheduleId(data[0].id);
       }
     } catch (error) {
