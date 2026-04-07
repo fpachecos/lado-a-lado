@@ -55,14 +55,38 @@ export default function ConviteScreen() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    let handled = false;
+
+    // App em background: link chega como evento
+    const subscription = Linking.addEventListener('url', ({ url }) => {
+      if (handled) return;
+      handled = true;
+      processInviteUrl(url);
+    });
+
+    // App em cold start: link está na URL inicial
     Linking.getInitialURL().then((url) => {
+      if (handled) return;
       if (url) {
+        handled = true;
         processInviteUrl(url);
-      } else {
+      }
+      // Se não há URL inicial, aguarda o evento acima ou o timeout abaixo
+    });
+
+    // Fallback: nenhuma URL recebida após 3 segundos
+    const timeout = setTimeout(() => {
+      if (!handled) {
+        handled = true;
         setErrorMsg('Link de convite inválido ou expirado.');
         setStep('error');
       }
-    });
+    }, 3000);
+
+    return () => {
+      subscription.remove();
+      clearTimeout(timeout);
+    };
   }, []);
 
   const processInviteUrl = async (url: string) => {
