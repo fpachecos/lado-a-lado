@@ -115,6 +115,8 @@ export default function ConviteScreen() {
     try {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
+      // Vincula o convite ao usuário recém-confirmado
+      try { await supabase.rpc('accept_invite'); } catch { }
       router.replace('/(tabs)');
     } catch (err: any) {
       Alert.alert('Erro', err.message ?? 'Não foi possível definir a senha.');
