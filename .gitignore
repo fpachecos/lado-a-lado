@@ -40,3 +40,9 @@ ios/
 # Credentials locais
 credentials.json
 credentials/
+
+# Build artifacts
+*.ipa
+*.apk
+*.aab
+build-*.ipa
