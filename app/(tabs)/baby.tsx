@@ -16,8 +16,11 @@ import { Baby } from '@/types/database';
 import { GradientBackground } from '@/components/GradientBackground';
 import DatePicker from '@/components/DatePicker';
 import { parseISO } from 'date-fns';
+import { useUserContext } from '@/lib/user-context';
 
 export default function BabyScreen() {
+  const { effectiveUserId } = useUserContext();
+
   const [baby, setBaby] = useState<Baby | null>(null);
   const [name, setName] = useState('');
   const [gender, setGender] = useState<'male' | 'female' | null>(null);
@@ -26,18 +29,16 @@ export default function BabyScreen() {
   const [initialLoading, setInitialLoading] = useState(true);
 
   useEffect(() => {
-    loadBaby();
-  }, []);
+    if (effectiveUserId) loadBaby();
+  }, [effectiveUserId]);
 
   const loadBaby = async () => {
+    if (!effectiveUserId) return;
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
       const { data, error } = await supabase
         .from('babies')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', effectiveUserId)
         .single();
 
       if (error && error.code !== 'PGRST116') {
@@ -66,8 +67,7 @@ export default function BabyScreen() {
 
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!effectiveUserId) return;
 
       const birthDateStr = birthDate ? birthDate.toISOString().split('T')[0] : null;
 
@@ -88,7 +88,7 @@ export default function BabyScreen() {
         const { error } = await supabase
           .from('babies')
           .insert({
-            user_id: user.id,
+            user_id: effectiveUserId,
             name: name.trim(),
             gender,
             birth_date: birthDateStr,

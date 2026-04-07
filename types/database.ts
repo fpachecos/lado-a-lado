@@ -91,3 +91,13 @@ export interface BabyFeeding {
   created_at: string;
 }
 
+export interface UserInvite {
+  id: string;
+  inviter_id: string;
+  invitee_email: string;
+  invitee_id: string | null;
+  status: 'pending' | 'accepted' | 'revoked';
+  created_at: string;
+  updated_at: string;
+}
+

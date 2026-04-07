@@ -16,8 +16,11 @@ import { Colors } from '@/constants/Colors';
 import { Baby, VisitSchedule, Companion } from '@/types/database';
 import { isPremiumUser, getOfferings, purchasePackage, restorePurchases } from '@/lib/revenuecat';
 import { GradientBackground } from '@/components/GradientBackground';
+import { useUserContext } from '@/lib/user-context';
 
 export default function HomeScreen() {
+  const { effectiveUserId } = useUserContext();
+
   const [baby, setBaby] = useState<Baby | null>(null);
   const [schedules, setSchedules] = useState<VisitSchedule[]>([]);
   const [companions, setCompanions] = useState<Companion[]>([]);
@@ -30,27 +33,25 @@ export default function HomeScreen() {
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (effectiveUserId) loadData();
+  }, [effectiveUserId]);
 
   const loadData = async () => {
+    if (!effectiveUserId) return;
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
       const [{ data: babyData }, { data: schedulesData }, { data: companionsData }] =
         await Promise.all([
-          supabase.from('babies').select('*').eq('user_id', user.id).single(),
+          supabase.from('babies').select('*').eq('user_id', effectiveUserId).single(),
           supabase
             .from('visit_schedules')
             .select('*')
-            .eq('user_id', user.id)
+            .eq('user_id', effectiveUserId)
             .order('created_at', { ascending: false })
             .limit(5),
           supabase
             .from('companions')
             .select('*')
-            .eq('user_id', user.id)
+            .eq('user_id', effectiveUserId)
             .order('created_at', { ascending: true }),
         ]);
 

@@ -15,8 +15,10 @@ import { supabase } from '@/lib/supabase';
 import { Colors } from '@/constants/Colors';
 import { Companion } from '@/types/database';
 import { GradientBackground } from '@/components/GradientBackground';
+import { useUserContext } from '@/lib/user-context';
 
 export default function CompanionEditScreen() {
+  const { effectiveUserId } = useUserContext();
   const { id } = useLocalSearchParams<{ id: string }>();
   const isNew = id === 'new';
 
@@ -61,13 +63,12 @@ export default function CompanionEditScreen() {
 
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!effectiveUserId) return;
 
       if (isNew) {
         const { error } = await supabase
           .from('companions')
-          .insert({ user_id: user.id, name: name.trim() });
+          .insert({ user_id: effectiveUserId, name: name.trim() });
 
         if (error) throw error;
       } else {

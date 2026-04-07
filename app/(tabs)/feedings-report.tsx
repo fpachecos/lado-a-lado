@@ -14,6 +14,7 @@ import { supabase } from '@/lib/supabase';
 import { Colors } from '@/constants/Colors';
 import { BabyFeeding } from '@/types/database';
 import { GradientBackground } from '@/components/GradientBackground';
+import { useUserContext } from '@/lib/user-context';
 
 type Breast = 'left' | 'right' | 'both';
 
@@ -71,18 +72,18 @@ function buildSummaries(feedings: BabyFeeding[]): DaySummary[] {
 }
 
 export default function FeedingsReportScreen() {
+  const { effectiveUserId } = useUserContext();
+
   const [feedings, setFeedings] = useState<BabyFeeding[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
+    if (!effectiveUserId) return;
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
       const { data: babyData } = await supabase
         .from('babies')
         .select('id')
-        .eq('user_id', user.id)
+        .eq('user_id', effectiveUserId)
         .single();
 
       if (!babyData) { setLoading(false); return; }
@@ -99,7 +100,7 @@ export default function FeedingsReportScreen() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [effectiveUserId]);
 
   useEffect(() => { loadData(); }, [loadData]);
 

@@ -20,6 +20,7 @@ import { Colors } from '@/constants/Colors';
 import { Baby, BabyFeeding } from '@/types/database';
 import { GradientBackground } from '@/components/GradientBackground';
 import DatePicker from '@/components/DatePicker';
+import { useUserContext } from '@/lib/user-context';
 import TimePicker from '@/components/TimePicker';
 
 type Breast = 'left' | 'right' | 'both';
@@ -47,6 +48,8 @@ function getDayLabel(dateStr: string): string {
 }
 
 export default function FeedingsScreen() {
+  const { effectiveUserId } = useUserContext();
+
   const [baby, setBaby] = useState<Baby | null>(null);
   const [feedings, setFeedings] = useState<BabyFeeding[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,14 +65,12 @@ export default function FeedingsScreen() {
   const [breast, setBreast] = useState<Breast>('left');
 
   const loadData = useCallback(async () => {
+    if (!effectiveUserId) return;
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
       const { data: babyData } = await supabase
         .from('babies')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', effectiveUserId)
         .single();
 
       if (!babyData) { setLoading(false); return; }
@@ -87,7 +88,7 @@ export default function FeedingsScreen() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [effectiveUserId]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
