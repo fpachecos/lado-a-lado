@@ -14,7 +14,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.ladoalado.app",
-      "buildNumber": "1.3.1",
+      "buildNumber": "1.3.2",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Este app precisa acessar suas fotos para personalizar o perfil.",
         "ITSAppUsesNonExemptEncryption": false
