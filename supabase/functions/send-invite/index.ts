@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
 
     const { data: inviteData, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
       inviteeEmail,
-      { redirectTo: 'ladoalado://convite' }
+      { redirectTo: 'https://lado-a-lado.vercel.app/convite' }
     )
 
     console.log('[send-invite] inviteUserByEmail error:', inviteError?.message ?? 'none')
@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
 
         const { data: newInvite, error: newInviteError } = await adminClient.auth.admin.inviteUserByEmail(
           inviteeEmail,
-          { redirectTo: 'ladoalado://convite' }
+          { redirectTo: 'https://lado-a-lado.vercel.app/convite' }
         )
         console.log('[send-invite] reinvite error:', newInviteError?.message ?? 'none', '| new id:', newInvite?.user?.id ?? 'null')
 
