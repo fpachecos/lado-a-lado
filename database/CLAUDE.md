@@ -72,7 +72,7 @@ CREATE TRIGGER nome_trigger ...
 1. Crie o arquivo `database/migration_<descricao>.sql`
 2. Acesse o Supabase Dashboard → SQL Editor
 3. Cole e execute o script
-4. Atualize `database/README.md` com o novo arquivo na ordem de execução
+4. Atualize a lista de scripts em `README.md` (raiz) com o novo arquivo na ordem de execução
 
 Use `/db-migration` para criar uma migração nova com o padrão correto.
 

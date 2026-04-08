@@ -1,45 +1,63 @@
 # Lado a Lado
 
-App iOS/Android para organizar agendas de visitas à maternidade. Desenvolvido com Expo (React Native) e Supabase.
+App iOS/Android para organizar agendas de visitas à maternidade. Expo (React Native) + Supabase.
 
 ## Funcionalidades
 
-- Autenticação com Supabase (login, cadastro, recuperação de senha)
+- Autenticação Supabase (login, cadastro, recuperação de senha)
 - Cadastro de informações do bebê
 - Criação e gestão de agendas de visitas com slots de horário
-- Controle de capacidade máxima por slot
+- Controle de capacidade por slot
 - Link público para visitantes confirmarem presença sem login
-- Gestão de visitas confirmadas
-- Sistema de convites por e-mail (acompanhantes gerenciam a agenda juntos)
-- Integração com RevenueCat para assinaturas premium (múltiplos dias)
+- Sistema de convites por e-mail (acompanhantes co-gerenciam a agenda)
+- Integração RevenueCat — plano premium: múltiplos dias por agenda
 
 ## Pré-requisitos
 
 - Node.js 18+
 - Conta no Supabase
-- Conta no RevenueCat (para funcionalidades premium)
+- Conta no RevenueCat
 
 ## Configuração
 
-1. **Instale as dependências:**
+### 1. Instalar dependências
 
 ```bash
 npm install
 ```
 
-2. **Configure as variáveis de ambiente** — crie `.env` na raiz:
+### 2. Variáveis de ambiente
 
+Crie `.env` na raiz:
+
+```env
+EXPO_PUBLIC_SUPABASE_URL=https://seu-projeto.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=sua_chave_anonima
+EXPO_PUBLIC_REVENUECAT_API_KEY_IOS=sua_chave_revenuecat_ios
 ```
-EXPO_PUBLIC_SUPABASE_URL=
-EXPO_PUBLIC_SUPABASE_ANON_KEY=
-EXPO_PUBLIC_REVENUECAT_API_KEY_IOS=
-```
 
-3. **Configure o banco de dados:**
+- Supabase URL e Key: Dashboard → Settings → API
+- RevenueCat Key: Dashboard → API Keys
 
-Execute os scripts de `database/` no SQL Editor do Supabase na ordem indicada em `database/README.md`.
+### 3. Banco de dados
 
-4. **Execute o aplicativo:**
+Execute os scripts de `database/` no SQL Editor do Supabase nesta ordem:
+
+1. `schema.sql`
+2. `trigger_no_overlap.sql`
+3. `migration_add_schedule_name.sql`
+4. `migration_companions.sql`
+5. `migration_delete_user_rpc.sql`
+6. `migration_delete_user_rpc_v2.sql`
+7. `migration_fix_overlap_trigger.sql`
+8. `migration_email_invites.sql`
+9. `migration_activity_completed.sql`
+10. `migration_baby_weights.sql`
+11. `migration_baby_heights.sql`
+12. `migration_baby_feedings.sql`
+13. `migration_fix_accept_invite.sql`
+
+### 4. Executar
 
 ```bash
 npm run ios       # iOS Simulator
@@ -66,7 +84,7 @@ lado-a-lado/
 
 ## Banco de Dados
 
-Schema `ladoalado` no Supabase com RLS ativo. Tabelas principais:
+Schema `ladoalado` no Supabase com RLS ativo.
 
 | Tabela | Descrição |
 |---|---|
@@ -78,7 +96,141 @@ Schema `ladoalado` no Supabase com RLS ativo. Tabelas principais:
 | `companion_activities` | Atividades (markdown) por acompanhante |
 | `user_invites` | Convites por e-mail entre usuários |
 
-Ver `database/README.md` para a ordem de execução dos scripts.
+RLS relevante: `visit_schedules` e `visit_slots` têm SELECT público — usados pela web sem autenticação.
+
+## RevenueCat — Sandbox
+
+O ambiente sandbox é detectado automaticamente pela conta do App Store no dispositivo.
+
+1. Criar conta sandbox: App Store Connect → Users and Access → Sandbox Testers → +
+2. No dispositivo: Settings → App Store → faça logout da conta pessoal. Ao comprar no app, o iOS pedirá login — use a conta sandbox.
+3. Dashboard RevenueCat: ative "View Sandbox Data"
+4. Verifique se "Sandbox Testing Access" está ativo em Project Settings
+
+**Compras não aparecem?** Confirme que os produtos e o entitlement "premium" estão configurados no RevenueCat e no App Store Connect.
+
+## Ícones
+
+| Arquivo | Tamanho |
+|---|---|
+| `assets/icon.png` | 1024×1024px |
+| `assets/splash.png` | 1242×2436px |
+| `assets/adaptive-icon.png` | 1024×1024px (Android) |
+| `assets/favicon.png` | 32×32px |
+
+Com EAS Build os ícones são processados automaticamente a partir do `app.json`.
+
+## App Store — Textos
+
+### Nome (máx. 30 caracteres)
+```
+Lado a Lado
+```
+
+### Subtítulo (máx. 30 caracteres)
+```
+Agendas de visita à maternidade
+```
+
+### Texto promocional (máx. 170 caracteres)
+```
+Organize as visitas à maternidade em um só lugar. Cadastre o bebê, crie agendas com horários e compartilhe o link para familiares e amigos escolherem quando visitar. Tudo simples e seguro.
+```
+
+### Descrição (máx. 4000 caracteres)
+```
+Lado a Lado foi feito para quem está à espera de um bebê e quer organizar as visitas à maternidade sem stress.
+
+Com o app você:
+• Cadastra as informações do bebê (nome e sexo) em um único lugar
+• Cria agendas de visitas com dias e horários que funcionam para você
+• Define quantas pessoas podem visitar em cada horário
+• Gera um link para compartilhar com familiares e amigos
+• Acompanha quais visitas já foram confirmadas
+
+Assim, todo mundo sabe quando pode ir, evita aglomeração e você consegue descansar nos momentos certos.
+
+RECURSOS
+
+— Informações do bebê
+Guarde o nome e o sexo do bebê no app. Dados só seus, na sua conta.
+
+— Agendas de visitas
+Monte a agenda com a data, o nome (ex.: "Primeira semana em casa"), os horários e a quantidade de vagas por slot. No plano gratuito você cria agendas de 1 dia; no Premium, de vários dias.
+
+— Link para compartilhar
+Cada agenda gera um link. Envie no grupo da família ou por mensagem. Quem recebe escolhe um horário disponível e confirma a visita.
+
+— Controle das visitas
+Veja em uma lista quais horários já foram preenchidos e por quem, tudo no celular.
+
+— Plano Premium
+Assinando o Premium você desbloqueia a criação de agendas com múltiplos dias, ideal para receber pessoas em mais de 1 dia.
+
+Lado a Lado é pensado para gestantes, parceiros e famílias que querem receber visitas com calma e segurança. Baixe e organize as visitas ao seu ritmo.
+```
+
+### Palavras-chave (máx. 100 caracteres)
+```
+maternidade,bebê,visitas,agenda,gestante,recém-nascido,família,organizar,visita hospitalar,parto
+```
+
+### Novidades (versão 1.0.0)
+```
+Bem-vindo ao Lado a Lado.
+
+Nesta primeira versão você já pode:
+• Cadastrar as informações do seu bebê
+• Criar agendas de visitas com horários e vagas por slot
+• Compartilhar o link da agenda com familiares e amigos
+• Acompanhar as visitas confirmadas
+• Assinar o plano Premium para criar agendas com vários dias
+
+Se tiver sugestões ou problemas, use o link de suporte na página do app. Obrigado por baixar!
+```
+
+### URLs obrigatórias
+
+| Campo | Obrigatório |
+|---|---|
+| URL de suporte | Sim |
+| URL de política de privacidade | Sim (app coleta e-mail e dados do bebê) |
+| URL de marketing | Não |
+
+### Categoria
+
+- Principal: **Estilo de vida** (Lifestyle)
+- Secundária: **Saúde e fitness** (Health & Fitness)
+
+### Classificação etária: 4+
+
+### Capturas de tela — tamanhos aceitos
+
+| Display | Dimensões |
+|---|---|
+| 6.9" | 1290×2796 ou 1320×2868 |
+| 6.5" | 1284×2778 ou 1242×2688 |
+| 6.1" | 1170×2532 ou 1179×2556 |
+
+Para redimensionar no Mac: Preview → Ferramentas → Ajustar tamanho.
+
+## Troubleshooting
+
+**"Supabase URL ou chave não configurada"** — verifique se `.env` está na raiz e as variáveis começam com `EXPO_PUBLIC_`.
+
+**"getDevServer is not a function"** — cache corrompido:
+```bash
+rm -rf node_modules .expo package-lock.json
+npm install
+npx expo start --clear
+```
+
+**Expo Go não conecta** — use o iOS Simulator (`npm run ios`) ou faça um Development Build:
+```bash
+eas build --profile development --platform ios
+```
+
+**"Slot sobrepõe outro slot"** — comportamento esperado; o sistema impede sobreposição de horários.
 
 ## Licença
 
