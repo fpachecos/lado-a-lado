@@ -158,8 +158,6 @@ Responda o questionário na App Store Connect com base no que o app realmente fa
 | Categoria | § 8 |
 | Classificação etária | § 9 |
 
-Substitua `[URL_DE_SUPORTE]` e `[URL_PRIVACIDADE]` pelos seus links antes de submeter.
-
 ---
 
 ## Captura de tela para “Informações para a equipe de revisão”
