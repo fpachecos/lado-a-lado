@@ -26,18 +26,29 @@ npm run lint
 
 ### Routing (Expo Router)
 - `app/index.tsx` — Entry point: verifica auth, redireciona
+- `app/convite.tsx` — Rota pública de aceite de convite (sem auth)
 - `app/(auth)/` — Login, signup, forgot-password
-- `app/(tabs)/` — Navegação por tabs (home, baby, visits, schedules)
-- `app/(tabs)/schedules/[id].tsx` — Rota dinâmica de agenda
+- `app/(tabs)/` — Telas principais (Stack, sem tab bar visível)
+  - `index.tsx` — Home
+  - `baby.tsx` — Dados do bebê
+  - `visits.tsx` — Visitas confirmadas
+  - `schedules/` — Lista, nova agenda, detalhe `[id].tsx`
+  - `companion/[id].tsx` — Detalhe do acompanhante
+  - `companion-activities/[id].tsx` — Atividades do acompanhante
+  - `profile.tsx` — Perfil e configurações
+  - `weight.tsx` — Registro de peso do bebê
+  - `feedings.tsx` — Registro de alimentações
+  - `feedings-report.tsx` — Relatório de alimentações
 
 ### Backend (Supabase)
 - Client: `lib/supabase.ts` | Schema: `ladoalado` | Ver `database/schema.sql`
-- Tabelas: `babies`, `visit_schedules`, `visit_slots`, `visit_bookings`, `companions`
+- Tabelas: `babies`, `visit_schedules`, `visit_slots`, `visit_bookings`, `companions`, `companion_activities`, `user_invites`, `baby_weights`, `baby_heights`, `baby_feedings`
 - RLS ativo — usuário vê só seus próprios dados
-- `visit_schedules` tem policy SELECT pública (`USING (true)`) — usado pela web sem login
+- `visit_schedules` e `visit_slots` têm policy SELECT pública (`USING (true)`) — usados pela web sem login
 
 ### State & Data
-- Sem gerenciador global — Supabase direto em cada tela
+- `lib/user-context.tsx` — único contexto global; provê `effectiveUserId` (uid real do dono dos dados — pode ser o do convidante quando o usuário logado é um convidado) e `isInvited`. Todas as queries com `user_id` devem usar `effectiveUserId`.
+- Demais dados: Supabase direto em cada tela, sem gerenciador global
 - `@react-native-async-storage/async-storage` para persistência local
 - `date-fns` para manipulação de datas
 
