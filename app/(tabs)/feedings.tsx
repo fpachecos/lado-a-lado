@@ -225,6 +225,18 @@ export default function FeedingsScreen() {
     ? Math.round(todayFeedings.reduce((sum, f) => sum + differenceInMinutes(new Date(f.ended_at), new Date(f.started_at)), 0) / todayCount)
     : 0;
 
+  // Intervalo médio entre mamadas do dia (início → início)
+  const todayFeedingsSorted = todayCount > 1
+    ? [...todayFeedings].sort((a, b) => new Date(a.started_at).getTime() - new Date(b.started_at).getTime())
+    : [];
+  const todayAvgInterval = todayFeedingsSorted.length > 1
+    ? Math.round(
+        todayFeedingsSorted.slice(1).reduce((sum, f, i) =>
+          sum + differenceInMinutes(new Date(f.started_at), new Date(todayFeedingsSorted[i].started_at)), 0
+        ) / (todayFeedingsSorted.length - 1)
+      )
+    : 0;
+
   if (loading) {
     return (
       <GradientBackground>
@@ -270,6 +282,12 @@ export default function FeedingsScreen() {
                     {format(new Date(todayFeedings[0].started_at), 'HH:mm')}
                   </Text>
                   <Text style={styles.summaryItemLabel}>última às</Text>
+                </View>
+              )}
+              {todayCount > 1 && (
+                <View style={styles.summaryItem}>
+                  <Text style={styles.summaryValue}>{formatDuration(todayAvgInterval)}</Text>
+                  <Text style={styles.summaryItemLabel}>intervalo médio</Text>
                 </View>
               )}
             </View>
@@ -534,9 +552,9 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     marginBottom: 14,
   },
-  summaryRow: { flexDirection: 'row', gap: 24 },
-  summaryItem: { alignItems: 'flex-start' },
-  summaryValue: { fontSize: 24, fontWeight: '700', color: Colors.primary, letterSpacing: -0.5 },
+  summaryRow: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 16 },
+  summaryItem: { width: '50%', alignItems: 'flex-start' },
+  summaryValue: { fontSize: 22, fontWeight: '700', color: Colors.primary, letterSpacing: -0.5 },
   summaryItemLabel: { fontSize: 12, color: Colors.textSecondary, fontWeight: '500', marginTop: 2 },
 
   // Add button
