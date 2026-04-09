@@ -56,6 +56,7 @@ Execute os scripts de `database/` no SQL Editor do Supabase nesta ordem:
 11. `migration_baby_heights.sql`
 12. `migration_baby_feedings.sql`
 13. `migration_fix_accept_invite.sql`
+14. `migration_fix_baby_feedings_update_rls.sql`
 
 ### 4. Executar
 
