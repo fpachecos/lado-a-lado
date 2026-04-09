@@ -146,6 +146,9 @@ export default function FeedingsScreen() {
     setEndDateTime(updated);
   };
 
+  const setStartToNow = () => setStartDateTime(new Date());
+  const setEndToNow = () => setEndDateTime(new Date());
+
   const handleSave = async () => {
     if (!baby) return;
 
@@ -355,6 +358,9 @@ export default function FeedingsScreen() {
                   <View style={styles.timePickerWrapper}>
                     <TimePicker value={startDateTime} onChange={handleStartTimeChange} />
                   </View>
+                  <TouchableOpacity style={styles.nowButton} onPress={setStartToNow}>
+                    <Text style={styles.nowButtonText}>Agora</Text>
+                  </TouchableOpacity>
                 </View>
 
                 {/* Fim */}
@@ -370,6 +376,9 @@ export default function FeedingsScreen() {
                   <View style={styles.timePickerWrapper}>
                     <TimePicker value={endDateTime} onChange={handleEndTimeChange} />
                   </View>
+                  <TouchableOpacity style={styles.nowButton} onPress={setEndToNow}>
+                    <Text style={styles.nowButtonText}>Agora</Text>
+                  </TouchableOpacity>
                 </View>
 
                 {/* Seio */}
@@ -654,9 +663,24 @@ const styles = StyleSheet.create({
   },
 
   // Date + time row
-  dateTimeRow: { flexDirection: 'row', gap: 10 },
+  dateTimeRow: { flexDirection: 'row', gap: 10, alignItems: 'stretch' },
   datePickerWrapper: { flex: 1.4 },
   timePickerWrapper: { flex: 1 },
+  nowButton: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.cardPrimary,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.borderPrimary,
+    paddingHorizontal: 10,
+    minWidth: 52,
+  },
+  nowButtonText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.primary,
+  },
 
   // Breast selector
   breastSelector: { flexDirection: 'row', gap: 8 },
