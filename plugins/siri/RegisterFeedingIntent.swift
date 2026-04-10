@@ -97,10 +97,9 @@ struct LadoALadoShortcuts: AppShortcutsProvider {
         AppShortcut(
             intent: RegisterFeedingIntent(),
             phrases: [
-                "Registrar mamada no \(.applicationName)",
-                "Mamada no \(.applicationName)",
-                "Anotar mamada no \(.applicationName)",
                 "Registrar mamada no seio \(\.$breast) no \(.applicationName)",
+                "Mamada no seio \(\.$breast) no \(.applicationName)",
+                "Anotar mamada no seio \(\.$breast) no \(.applicationName)",
             ],
             shortTitle: "Registrar Mamada",
             systemImageName: "drop.fill"
