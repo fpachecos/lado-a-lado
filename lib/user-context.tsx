@@ -10,6 +10,7 @@
  */
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { clearSessionForSiri, saveSessionForSiri } from '@/lib/session-sync';
 
 interface UserContextValue {
   /** uid do usuário autenticado */
@@ -37,11 +38,24 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   const reload = useCallback(() => setTick((t) => t + 1), []);
 
+  // Limpa dados da Siri quando o usuário faz logout
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        clearSessionForSiri();
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
-      const { data: { user } } = await supabase.auth.getUser();
+      const [{ data: { user } }, { data: { session } }] = await Promise.all([
+        supabase.auth.getUser(),
+        supabase.auth.getSession(),
+      ]);
       if (!user || cancelled) return;
 
       setUserId(user.id);
@@ -54,13 +68,28 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         .eq('status', 'accepted')
         .maybeSingle();
 
-      if (!cancelled) {
-        if (invite?.inviter_id) {
-          setEffectiveUserId(invite.inviter_id);
-          setIsInvited(true);
-        } else {
-          setEffectiveUserId(user.id);
-          setIsInvited(false);
+      if (cancelled) return;
+
+      const ownerId = invite?.inviter_id ?? user.id;
+
+      if (invite?.inviter_id) {
+        setEffectiveUserId(invite.inviter_id);
+        setIsInvited(true);
+      } else {
+        setEffectiveUserId(user.id);
+        setIsInvited(false);
+      }
+
+      // Sincroniza sessão com o App Intent da Siri
+      if (session?.access_token) {
+        const { data: baby } = await supabase
+          .from('babies')
+          .select('id')
+          .eq('user_id', ownerId)
+          .maybeSingle();
+
+        if (!cancelled && baby?.id) {
+          saveSessionForSiri(session.access_token, user.id, baby.id);
         }
       }
     }
