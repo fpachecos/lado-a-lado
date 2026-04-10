@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
-import { format, subDays, parseISO, differenceInMinutes } from 'date-fns';
+import { format, subDays, startOfDay, parseISO, differenceInMinutes } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/lib/supabase';
 import { Colors } from '@/constants/Colors';
@@ -18,12 +18,15 @@ import { useUserContext } from '@/lib/user-context';
 
 type Breast = 'left' | 'right' | 'both';
 
+const DAYS_PER_PAGE = 3;
+
 interface DaySummary {
   day: string;
   feedings: BabyFeeding[];
   count: number;
-  totalMinutes: number;
-  avgMinutes: number;
+  avgMinutes: number | null;
+  totalMinutes: number | null;
+  avgInterval: number | null;
   breastCounts: Record<Breast, number>;
 }
 
@@ -59,23 +62,53 @@ function buildSummaries(feedings: BabyFeeding[]): DaySummary[] {
     .sort((a, b) => b.localeCompare(a))
     .map(day => {
       const dayFeedings = grouped[day];
-      const durations = dayFeedings.map(f =>
-        Math.max(0, differenceInMinutes(new Date(f.ended_at), new Date(f.started_at)))
-      );
-      const totalMinutes = durations.reduce((s, d) => s + d, 0);
-      const avgMinutes = dayFeedings.length > 0 ? Math.round(totalMinutes / dayFeedings.length) : 0;
       const breastCounts: Record<Breast, number> = { left: 0, right: 0, both: 0 };
       for (const f of dayFeedings) breastCounts[f.breast]++;
 
-      return { day, feedings: dayFeedings, count: dayFeedings.length, totalMinutes, avgMinutes, breastCounts };
+      // Duração média: só para mamadas que têm ended_at
+      const withEnd = dayFeedings.filter(f => f.ended_at !== null);
+      const avgMinutes = withEnd.length > 0
+        ? Math.round(
+            withEnd.reduce((s, f) => s + Math.max(0, differenceInMinutes(new Date(f.ended_at!), new Date(f.started_at))), 0)
+            / withEnd.length
+          )
+        : null;
+      const totalMinutes = withEnd.length > 0
+        ? withEnd.reduce((s, f) => s + Math.max(0, differenceInMinutes(new Date(f.ended_at!), new Date(f.started_at))), 0)
+        : null;
+
+      // Intervalo médio entre mamadas do dia (início → início)
+      const sorted = [...dayFeedings].sort((a, b) => new Date(a.started_at).getTime() - new Date(b.started_at).getTime());
+      const avgInterval = sorted.length > 1
+        ? Math.round(
+            sorted.slice(1).reduce((sum, f, i) =>
+              sum + differenceInMinutes(new Date(f.started_at), new Date(sorted[i].started_at)), 0
+            ) / (sorted.length - 1)
+          )
+        : null;
+
+      return { day, feedings: dayFeedings, count: dayFeedings.length, avgMinutes, totalMinutes, avgInterval, breastCounts };
     });
 }
 
 export default function FeedingsReportScreen() {
   const { effectiveUserId } = useUserContext();
 
+  const [babyId, setBabyId] = useState<string | null>(null);
   const [feedings, setFeedings] = useState<BabyFeeding[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [oldestLoadedDate, setOldestLoadedDate] = useState<Date | null>(null);
+
+  const checkHasMore = useCallback(async (id: string, beforeDate: Date) => {
+    const { count } = await supabase
+      .from('baby_feedings')
+      .select('id', { count: 'exact', head: true })
+      .eq('baby_id', id)
+      .lt('started_at', beforeDate.toISOString());
+    return (count || 0) > 0;
+  }, []);
 
   const loadData = useCallback(async () => {
     if (!effectiveUserId) return;
@@ -87,20 +120,53 @@ export default function FeedingsReportScreen() {
         .single();
 
       if (!babyData) { setLoading(false); return; }
+      setBabyId(babyData.id);
+
+      const endDate = new Date();
+      endDate.setHours(23, 59, 59, 999);
+      const startDate = startOfDay(subDays(new Date(), DAYS_PER_PAGE - 1));
 
       const { data } = await supabase
         .from('baby_feedings')
         .select('*')
         .eq('baby_id', babyData.id)
+        .gte('started_at', startDate.toISOString())
         .order('started_at', { ascending: false });
 
       setFeedings(data || []);
+      setOldestLoadedDate(startDate);
+      setHasMore(await checkHasMore(babyData.id, startDate));
     } catch (e) {
       console.error('Erro ao carregar relatório:', e);
     } finally {
       setLoading(false);
     }
-  }, [effectiveUserId]);
+  }, [effectiveUserId, checkHasMore]);
+
+  const loadMore = useCallback(async () => {
+    if (!babyId || !oldestLoadedDate || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const endDate = oldestLoadedDate;
+      const startDate = startOfDay(subDays(oldestLoadedDate, DAYS_PER_PAGE));
+
+      const { data } = await supabase
+        .from('baby_feedings')
+        .select('*')
+        .eq('baby_id', babyId)
+        .gte('started_at', startDate.toISOString())
+        .lt('started_at', endDate.toISOString())
+        .order('started_at', { ascending: false });
+
+      setFeedings(prev => [...prev, ...(data || [])]);
+      setOldestLoadedDate(startDate);
+      setHasMore(await checkHasMore(babyId, startDate));
+    } catch (e) {
+      console.error('Erro ao carregar mais dados de relatório:', e);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [babyId, oldestLoadedDate, loadingMore, checkHasMore]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -116,23 +182,25 @@ export default function FeedingsReportScreen() {
 
   const summaries = buildSummaries(feedings);
 
-  // Estatísticas gerais (últimos 7 dias)
+  // Estatísticas gerais (últimos 7 dias carregados)
   const last7Days = summaries.slice(0, 7);
   const totalLast7 = last7Days.reduce((s, d) => s + d.count, 0);
   const avgPerDay = last7Days.length > 0 ? (totalLast7 / last7Days.length).toFixed(1) : '–';
-
-  const allDurations = feedings.map(f =>
-    Math.max(0, differenceInMinutes(new Date(f.ended_at), new Date(f.started_at)))
-  );
-  const globalAvg = allDurations.length > 0
-    ? Math.round(allDurations.reduce((s, d) => s + d, 0) / allDurations.length)
-    : 0;
 
   const breastTotal: Record<Breast, number> = { left: 0, right: 0, both: 0 };
   for (const f of feedings) breastTotal[f.breast]++;
   const mostUsedBreast = feedings.length > 0
     ? (['left', 'right', 'both'] as Breast[]).reduce((a, b) => breastTotal[a] >= breastTotal[b] ? a : b)
     : null;
+
+  // Intervalo médio global entre mamadas (dos dados carregados)
+  const allSorted = [...feedings].sort((a, b) => new Date(a.started_at).getTime() - new Date(b.started_at).getTime());
+  const globalIntervals = allSorted.slice(1).map((f, i) =>
+    differenceInMinutes(new Date(f.started_at), new Date(allSorted[i].started_at))
+  );
+  const globalAvgInterval = globalIntervals.length > 0
+    ? Math.round(globalIntervals.reduce((s, d) => s + d, 0) / globalIntervals.length)
+    : 0;
 
   return (
     <GradientBackground>
@@ -164,8 +232,8 @@ export default function FeedingsReportScreen() {
                   <Text style={styles.statLabel}>mamadas{'\n'}por dia{'\n'}(últ. 7 dias)</Text>
                 </View>
                 <View style={styles.statCard}>
-                  <Text style={styles.statValue}>{formatDuration(globalAvg)}</Text>
-                  <Text style={styles.statLabel}>duração{'\n'}média por{'\n'}mamada</Text>
+                  <Text style={styles.statValue}>{globalAvgInterval > 0 ? formatDuration(globalAvgInterval) : '–'}</Text>
+                  <Text style={styles.statLabel}>intervalo{'\n'}médio entre{'\n'}mamadas</Text>
                 </View>
                 <View style={styles.statCard}>
                   <Text style={styles.statValue}>{mostUsedBreast ? breastLabel(mostUsedBreast) : '–'}</Text>
@@ -191,16 +259,24 @@ export default function FeedingsReportScreen() {
                       <Text style={styles.dayMetricValue}>{summary.count}</Text>
                       <Text style={styles.dayMetricLabel}>mamadas</Text>
                     </View>
-                    <View style={styles.dayMetricDivider} />
-                    <View style={styles.dayMetricItem}>
-                      <Text style={styles.dayMetricValue}>{formatDuration(summary.avgMinutes)}</Text>
-                      <Text style={styles.dayMetricLabel}>média</Text>
-                    </View>
-                    <View style={styles.dayMetricDivider} />
-                    <View style={styles.dayMetricItem}>
-                      <Text style={styles.dayMetricValue}>{formatDuration(summary.totalMinutes)}</Text>
-                      <Text style={styles.dayMetricLabel}>total</Text>
-                    </View>
+                    {summary.avgInterval !== null && (
+                      <>
+                        <View style={styles.dayMetricDivider} />
+                        <View style={styles.dayMetricItem}>
+                          <Text style={styles.dayMetricValue}>{formatDuration(summary.avgInterval)}</Text>
+                          <Text style={styles.dayMetricLabel}>intervalo</Text>
+                        </View>
+                      </>
+                    )}
+                    {summary.totalMinutes !== null && (
+                      <>
+                        <View style={styles.dayMetricDivider} />
+                        <View style={styles.dayMetricItem}>
+                          <Text style={styles.dayMetricValue}>{formatDuration(summary.totalMinutes)}</Text>
+                          <Text style={styles.dayMetricLabel}>total</Text>
+                        </View>
+                      </>
+                    )}
                   </View>
 
                   {/* Distribuição de seios */}
@@ -220,13 +296,17 @@ export default function FeedingsReportScreen() {
                   {/* Lista de mamadas do dia */}
                   <View style={styles.feedingsList}>
                     {summary.feedings.map((f, i) => {
-                      const dur = Math.max(0, differenceInMinutes(new Date(f.ended_at), new Date(f.started_at)));
+                      const hasDuration = f.ended_at !== null;
+                      const dur = hasDuration
+                        ? Math.max(0, differenceInMinutes(new Date(f.ended_at!), new Date(f.started_at)))
+                        : null;
                       return (
                         <View key={f.id} style={[styles.feedingRow, i === 0 && styles.feedingRowFirst]}>
                           <Text style={styles.feedingRowTime}>
-                            {format(new Date(f.started_at), 'HH:mm')} → {format(new Date(f.ended_at), 'HH:mm')}
+                            {format(new Date(f.started_at), 'HH:mm')}
+                            {hasDuration ? ` → ${format(new Date(f.ended_at!), 'HH:mm')}` : ''}
                           </Text>
-                          <Text style={styles.feedingRowDur}>{formatDuration(dur)}</Text>
+                          <Text style={styles.feedingRowDur}>{dur !== null ? formatDuration(dur) : '–'}</Text>
                           <Text style={styles.feedingRowBreast}>{breastLabel(f.breast)}</Text>
                         </View>
                       );
@@ -234,6 +314,21 @@ export default function FeedingsReportScreen() {
                   </View>
                 </View>
               ))}
+
+              {/* Botão carregar mais */}
+              {hasMore && (
+                <TouchableOpacity
+                  style={styles.loadMoreButton}
+                  onPress={loadMore}
+                  disabled={loadingMore}
+                  activeOpacity={0.7}
+                >
+                  {loadingMore
+                    ? <ActivityIndicator color={Colors.primary} size="small" />
+                    : <Text style={styles.loadMoreText}>Carregar mais</Text>
+                  }
+                </TouchableOpacity>
+              )}
             </>
           )}
         </View>
@@ -379,4 +474,18 @@ const styles = StyleSheet.create({
   feedingRowTime: { flex: 1.5, fontSize: 13, fontWeight: '600', color: Colors.text },
   feedingRowDur: { flex: 1, fontSize: 13, fontWeight: '500', color: Colors.textSecondary },
   feedingRowBreast: { flex: 1, fontSize: 13, fontWeight: '500', color: Colors.textSecondary, textAlign: 'right' },
+
+  // Load more
+  loadMoreButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    marginTop: 4,
+    marginBottom: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.glassBorder,
+    backgroundColor: Colors.glass,
+  },
+  loadMoreText: { fontSize: 14, fontWeight: '600', color: Colors.primary },
 });

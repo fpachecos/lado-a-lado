@@ -86,7 +86,7 @@ export interface BabyFeeding {
   id: string;
   baby_id: string;
   started_at: string;
-  ended_at: string;
+  ended_at: string | null;
   breast: 'left' | 'right' | 'both';
   created_at: string;
 }
