@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
-import { format, subDays, parseISO, differenceInMinutes } from 'date-fns';
+import { format, subDays, startOfDay, parseISO, differenceInMinutes } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/lib/supabase';
 import { Colors } from '@/constants/Colors';
@@ -30,6 +30,8 @@ const BREAST_OPTIONS: { value: Breast; label: string; short: string }[] = [
   { value: 'right', label: 'Direito', short: 'D' },
   { value: 'both', label: 'Ambos', short: 'A' },
 ];
+
+const DAYS_PER_PAGE = 3;
 
 function formatDuration(minutes: number): string {
   if (minutes < 1) return '< 1 min';
@@ -51,8 +53,13 @@ export default function FeedingsScreen() {
   const { effectiveUserId } = useUserContext();
 
   const [baby, setBaby] = useState<Baby | null>(null);
+  const [babyId, setBabyId] = useState<string | null>(null);
   const [feedings, setFeedings] = useState<BabyFeeding[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [oldestLoadedDate, setOldestLoadedDate] = useState<Date | null>(null);
+
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editingFeeding, setEditingFeeding] = useState<BabyFeeding | null>(null);
@@ -63,6 +70,16 @@ export default function FeedingsScreen() {
   const [startDateTime, setStartDateTime] = useState<Date>(now);
   const [endDateTime, setEndDateTime] = useState<Date>(now);
   const [breast, setBreast] = useState<Breast>('left');
+  const [hasEndTime, setHasEndTime] = useState(false);
+
+  const checkHasMore = useCallback(async (id: string, beforeDate: Date) => {
+    const { count } = await supabase
+      .from('baby_feedings')
+      .select('id', { count: 'exact', head: true })
+      .eq('baby_id', id)
+      .lt('started_at', beforeDate.toISOString());
+    return (count || 0) > 0;
+  }, []);
 
   const loadData = useCallback(async () => {
     if (!effectiveUserId) return;
@@ -75,20 +92,54 @@ export default function FeedingsScreen() {
 
       if (!babyData) { setLoading(false); return; }
       setBaby(babyData);
+      setBabyId(babyData.id);
+
+      // Carrega os primeiros DAYS_PER_PAGE dias
+      const endDate = new Date();
+      endDate.setHours(23, 59, 59, 999);
+      const startDate = startOfDay(subDays(new Date(), DAYS_PER_PAGE - 1));
 
       const { data: feedingsData } = await supabase
         .from('baby_feedings')
         .select('*')
         .eq('baby_id', babyData.id)
+        .gte('started_at', startDate.toISOString())
         .order('started_at', { ascending: false });
 
       setFeedings(feedingsData || []);
+      setOldestLoadedDate(startDate);
+      setHasMore(await checkHasMore(babyData.id, startDate));
     } catch (e) {
       console.error('Erro ao carregar mamadas:', e);
     } finally {
       setLoading(false);
     }
-  }, [effectiveUserId]);
+  }, [effectiveUserId, checkHasMore]);
+
+  const loadMore = useCallback(async () => {
+    if (!babyId || !oldestLoadedDate || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const endDate = oldestLoadedDate;
+      const startDate = startOfDay(subDays(oldestLoadedDate, DAYS_PER_PAGE));
+
+      const { data } = await supabase
+        .from('baby_feedings')
+        .select('*')
+        .eq('baby_id', babyId)
+        .gte('started_at', startDate.toISOString())
+        .lt('started_at', endDate.toISOString())
+        .order('started_at', { ascending: false });
+
+      setFeedings(prev => [...prev, ...(data || [])]);
+      setOldestLoadedDate(startDate);
+      setHasMore(await checkHasMore(babyId, startDate));
+    } catch (e) {
+      console.error('Erro ao carregar mais mamadas:', e);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [babyId, oldestLoadedDate, loadingMore, checkHasMore]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -98,14 +149,16 @@ export default function FeedingsScreen() {
     setStartDateTime(base);
     setEndDateTime(base);
     setBreast('left');
+    setHasEndTime(false);
     setShowModal(true);
   };
 
   const openEditModal = (feeding: BabyFeeding) => {
     setEditingFeeding(feeding);
     setStartDateTime(new Date(feeding.started_at));
-    setEndDateTime(new Date(feeding.ended_at));
+    setEndDateTime(feeding.ended_at ? new Date(feeding.ended_at) : new Date());
     setBreast(feeding.breast);
+    setHasEndTime(feeding.ended_at !== null);
     setShowModal(true);
   };
 
@@ -152,7 +205,7 @@ export default function FeedingsScreen() {
   const handleSave = async () => {
     if (!baby) return;
 
-    if (endDateTime <= startDateTime) {
+    if (hasEndTime && endDateTime <= startDateTime) {
       if (Platform.OS === 'web') {
         window.alert('O horário de fim deve ser após o horário de início.');
       } else {
@@ -163,20 +216,17 @@ export default function FeedingsScreen() {
 
     setSaving(true);
     try {
+      const payload = {
+        started_at: startDateTime.toISOString(),
+        ended_at: hasEndTime ? endDateTime.toISOString() : null,
+        breast,
+      };
+
       if (editingFeeding) {
-        const { error } = await supabase.from('baby_feedings').update({
-          started_at: startDateTime.toISOString(),
-          ended_at: endDateTime.toISOString(),
-          breast,
-        }).eq('id', editingFeeding.id);
+        const { error } = await supabase.from('baby_feedings').update(payload).eq('id', editingFeeding.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('baby_feedings').insert({
-          baby_id: baby.id,
-          started_at: startDateTime.toISOString(),
-          ended_at: endDateTime.toISOString(),
-          breast,
-        });
+        const { error } = await supabase.from('baby_feedings').insert({ baby_id: baby.id, ...payload });
         if (error) throw error;
       }
       setShowModal(false);
@@ -221,9 +271,6 @@ export default function FeedingsScreen() {
   const todayKey = format(new Date(), 'yyyy-MM-dd');
   const todayFeedings = grouped[todayKey] || [];
   const todayCount = todayFeedings.length;
-  const todayAvg = todayCount > 0
-    ? Math.round(todayFeedings.reduce((sum, f) => sum + differenceInMinutes(new Date(f.ended_at), new Date(f.started_at)), 0) / todayCount)
-    : 0;
 
   // Intervalo médio entre mamadas do dia (início → início)
   const todayFeedingsSorted = todayCount > 1
@@ -272,12 +319,6 @@ export default function FeedingsScreen() {
               </View>
               {todayCount > 0 && (
                 <View style={styles.summaryItem}>
-                  <Text style={styles.summaryValue}>{formatDuration(todayAvg)}</Text>
-                  <Text style={styles.summaryItemLabel}>duração média</Text>
-                </View>
-              )}
-              {todayCount > 0 && (
-                <View style={styles.summaryItem}>
                   <Text style={styles.summaryValue}>
                     {format(new Date(todayFeedings[0].started_at), 'HH:mm')}
                   </Text>
@@ -306,8 +347,11 @@ export default function FeedingsScreen() {
               <View key={day}>
                 <Text style={styles.dayHeader}>{getDayLabel(day)}</Text>
                 {dayFeedings.map(feeding => {
-                  const duration = differenceInMinutes(new Date(feeding.ended_at), new Date(feeding.started_at));
                   const breastOption = BREAST_OPTIONS.find(b => b.value === feeding.breast);
+                  const hasDuration = feeding.ended_at !== null;
+                  const duration = hasDuration
+                    ? differenceInMinutes(new Date(feeding.ended_at!), new Date(feeding.started_at))
+                    : null;
                   return (
                     <TouchableOpacity
                       key={feeding.id}
@@ -319,12 +363,18 @@ export default function FeedingsScreen() {
                         <Text style={styles.feedingTime}>
                           {format(new Date(feeding.started_at), 'HH:mm')}
                         </Text>
-                        <Text style={styles.feedingTimeSep}>→</Text>
-                        <Text style={styles.feedingTime}>
-                          {format(new Date(feeding.ended_at), 'HH:mm')}
-                        </Text>
+                        {hasDuration && (
+                          <>
+                            <Text style={styles.feedingTimeSep}>→</Text>
+                            <Text style={styles.feedingTime}>
+                              {format(new Date(feeding.ended_at!), 'HH:mm')}
+                            </Text>
+                          </>
+                        )}
                       </View>
-                      <Text style={styles.feedingDuration}>{formatDuration(duration)}</Text>
+                      {duration !== null && (
+                        <Text style={styles.feedingDuration}>{formatDuration(duration)}</Text>
+                      )}
                       <View style={[styles.breastBadge, feeding.breast === 'both' && styles.breastBadgeBoth]}>
                         <Text style={styles.breastBadgeText}>{breastOption?.short}</Text>
                       </View>
@@ -340,6 +390,21 @@ export default function FeedingsScreen() {
               <Text style={styles.emptyStateText}>Nenhuma mamada registrada ainda.</Text>
               <Text style={styles.emptyStateSubtext}>Toque em "Registrar mamada" para começar.</Text>
             </View>
+          )}
+
+          {/* Botão carregar mais */}
+          {hasMore && (
+            <TouchableOpacity
+              style={styles.loadMoreButton}
+              onPress={loadMore}
+              disabled={loadingMore}
+              activeOpacity={0.7}
+            >
+              {loadingMore
+                ? <ActivityIndicator color={Colors.primary} size="small" />
+                : <Text style={styles.loadMoreText}>Carregar mais</Text>
+              }
+            </TouchableOpacity>
           )}
 
           <Text style={styles.deleteHint}>Toque em um registro para editar ou excluir</Text>
@@ -381,23 +446,39 @@ export default function FeedingsScreen() {
                   </TouchableOpacity>
                 </View>
 
-                {/* Fim */}
-                <Text style={styles.modalSectionLabel}>Fim</Text>
-                <View style={styles.dateTimeRow}>
-                  <View style={styles.datePickerWrapper}>
-                    <DatePicker
-                      value={endDateTime}
-                      onChange={handleEndDateChange}
-                      maximumDate={new Date()}
-                    />
+                {/* Toggle de horário de fim */}
+                <TouchableOpacity
+                  style={styles.endTimeToggle}
+                  onPress={() => setHasEndTime(v => !v)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.toggleTrack, hasEndTime && styles.toggleTrackActive]}>
+                    <View style={[styles.toggleThumb, hasEndTime && styles.toggleThumbActive]} />
                   </View>
-                  <View style={styles.timePickerWrapper}>
-                    <TimePicker value={endDateTime} onChange={handleEndTimeChange} />
-                  </View>
-                  <TouchableOpacity style={styles.nowButton} onPress={setEndToNow}>
-                    <Text style={styles.nowButtonText}>Agora</Text>
-                  </TouchableOpacity>
-                </View>
+                  <Text style={styles.endTimeToggleLabel}>Informar horário de fim</Text>
+                </TouchableOpacity>
+
+                {/* Fim (opcional) */}
+                {hasEndTime && (
+                  <>
+                    <Text style={styles.modalSectionLabel}>Fim</Text>
+                    <View style={styles.dateTimeRow}>
+                      <View style={styles.datePickerWrapper}>
+                        <DatePicker
+                          value={endDateTime}
+                          onChange={handleEndDateChange}
+                          maximumDate={new Date()}
+                        />
+                      </View>
+                      <View style={styles.timePickerWrapper}>
+                        <TimePicker value={endDateTime} onChange={handleEndTimeChange} />
+                      </View>
+                      <TouchableOpacity style={styles.nowButton} onPress={setEndToNow}>
+                        <Text style={styles.nowButtonText}>Agora</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </>
+                )}
 
                 {/* Seio */}
                 <Text style={styles.modalSectionLabel}>Seio</Text>
@@ -442,6 +523,7 @@ export default function FeedingsScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
       {/* Menu de ações do item */}
       <Modal
         visible={showActionMenu}
@@ -458,7 +540,10 @@ export default function FeedingsScreen() {
             <View style={styles.modalHandle} />
             {selectedFeeding && (
               <Text style={styles.actionMenuSubtitle}>
-                {format(new Date(selectedFeeding.started_at), 'HH:mm')} → {format(new Date(selectedFeeding.ended_at), 'HH:mm')}
+                {format(new Date(selectedFeeding.started_at), 'HH:mm')}
+                {selectedFeeding.ended_at
+                  ? ` → ${format(new Date(selectedFeeding.ended_at), 'HH:mm')}`
+                  : ''}
               </Text>
             )}
             <TouchableOpacity
@@ -631,6 +716,20 @@ const styles = StyleSheet.create({
   emptyStateText: { fontSize: 16, fontWeight: '600', color: Colors.textSecondary, marginBottom: 6 },
   emptyStateSubtext: { fontSize: 13, color: Colors.textTertiary, textAlign: 'center' },
 
+  // Load more
+  loadMoreButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    marginTop: 4,
+    marginBottom: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.glassBorder,
+    backgroundColor: Colors.glass,
+  },
+  loadMoreText: { fontSize: 14, fontWeight: '600', color: Colors.primary },
+
   deleteHint: {
     textAlign: 'center',
     fontSize: 12,
@@ -678,6 +777,40 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     marginBottom: 8,
     marginTop: 16,
+  },
+
+  // Toggle horário de fim
+  endTimeToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 18,
+    marginBottom: 2,
+  },
+  toggleTrack: {
+    width: 40,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.neutral,
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  toggleTrackActive: {
+    backgroundColor: Colors.primary,
+  },
+  toggleThumb: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#fff',
+  },
+  toggleThumbActive: {
+    alignSelf: 'flex-end',
+  },
+  endTimeToggleLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.textSecondary,
   },
 
   // Date + time row

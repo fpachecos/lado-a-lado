@@ -7,6 +7,21 @@
 > - `database/CLAUDE.md` — Banco de dados, migrations
 > - `app/CLAUDE.md` — App mobile, design system mobile
 
+## Migrations — Regras obrigatórias
+
+Sempre que criar um arquivo `database/migration_*.sql`:
+
+1. **Executar imediatamente** no banco remoto via CLI (não deixar para o usuário fazer manualmente):
+   ```bash
+   SUPABASE_ACCESS_TOKEN=$(grep SUPABASE_ACCESS_TOKEN .env | cut -d= -f2-) \
+   npx supabase db query --linked -f database/<arquivo>.sql --agent=yes 2>&1
+   ```
+2. **Atualizar `README.md`** (raiz) adicionando o novo arquivo no final da lista de ordem de execução (seção "Execute os scripts de `database/`").
+
+Essas duas ações fazem parte da criação de toda migration e devem ser feitas sem aguardar instrução do usuário.
+
+---
+
 ## Commands
 
 ```bash
