@@ -46,3 +46,6 @@ credentials/
 *.apk
 *.aab
 build-*.ipa
+
+# Arquivo vazio gerado como artefato de build
+/-
