@@ -9,7 +9,7 @@ enum BreastSideEnum: String, AppEnum {
     case right
     case both
 
-    static var typeDisplayRepresentation = TypeDisplayRepresentation(name: "Seio")
+    static var typeDisplayRepresentation = TypeDisplayRepresentation(name: "Mama")
 
     static var caseDisplayRepresentations: [Self: DisplayRepresentation] = [
         .left:  DisplayRepresentation(title: "Esquerdo"),
@@ -28,7 +28,7 @@ struct RegisterFeedingIntent: AppIntent {
     )
     static var openAppWhenRun: Bool = false
 
-    @Parameter(title: "Seio", requestValueDialog: "Qual seio? Esquerdo, direito ou ambos?")
+    @Parameter(title: "Mama", requestValueDialog: "Qual mama? Esquerda, direita ou ambas?")
     var breast: BreastSideEnum
 
     func perform() async throws -> some IntentResult & ProvidesDialog {
@@ -80,12 +80,12 @@ struct RegisterFeedingIntent: AppIntent {
 
         let breastName: String
         switch breast {
-        case .left:  breastName = "esquerdo"
-        case .right: breastName = "direito"
-        case .both:  breastName = "ambos"
+        case .left:  breastName = "esquerda"
+        case .right: breastName = "direita"
+        case .both:  breastName = "ambas"
         }
 
-        return .result(dialog: "Mamada no seio \(breastName) registrada agora!")
+        return .result(dialog: "Mamada na mama \(breastName) registrada agora!")
     }
 }
 
@@ -95,7 +95,7 @@ struct RegisterFeedingIntent: AppIntent {
 struct LastFeedingIntent: AppIntent {
     static var title: LocalizedStringResource = "Última Mamada"
     static var description = IntentDescription(
-        "Consulta o seio e o horário da última mamada registrada no Lado a Lado."
+        "Consulta a mama e o horário da última mamada registrada no Lado a Lado."
     )
     static var openAppWhenRun: Bool = false
 
@@ -155,17 +155,17 @@ struct LastFeedingIntent: AppIntent {
         let preposition: String
         switch breast {
         case "left":
-            breastName = "esquerdo"
-            preposition = "no seio"
+            breastName = "esquerda"
+            preposition = "na mama"
         case "right":
-            breastName = "direito"
-            preposition = "no seio"
+            breastName = "direita"
+            preposition = "na mama"
         case "both":
-            breastName = "ambos os seios"
+            breastName = "ambas as mamas"
             preposition = "em"
         default:
             breastName = breast
-            preposition = "no seio"
+            preposition = "na mama"
         }
 
         let isoFormatter = ISO8601DateFormatter()
@@ -193,9 +193,9 @@ struct LadoALadoShortcuts: AppShortcutsProvider {
         AppShortcut(
             intent: RegisterFeedingIntent(),
             phrases: [
-                "Registrar mamada no seio \(\.$breast) no \(.applicationName)",
-                "Mamada no seio \(\.$breast) no \(.applicationName)",
-                "Anotar mamada no seio \(\.$breast) no \(.applicationName)",
+                "Registrar mamada na mama \(\.$breast) no \(.applicationName)",
+                "Mamada na mama \(\.$breast) no \(.applicationName)",
+                "Anotar mamada na mama \(\.$breast) no \(.applicationName)",
             ],
             shortTitle: "Registrar Mamada",
             systemImageName: "drop.fill"
