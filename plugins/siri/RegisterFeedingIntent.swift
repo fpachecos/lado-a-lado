@@ -185,6 +185,109 @@ struct LastFeedingIntent: AppIntent {
     }
 }
 
+// MARK: - Last Measurements Intent
+
+@available(iOS 16.0, *)
+struct LastMeasurementsIntent: AppIntent {
+    static var title: LocalizedStringResource = "Medidas do Bebê"
+    static var description = IntentDescription(
+        "Consulta o último peso e altura registrados do bebê no Lado a Lado."
+    )
+    static var openAppWhenRun: Bool = false
+
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        let defaults = UserDefaults.standard
+
+        guard
+            let token       = defaults.string(forKey: "SiriSession_accessToken"),
+            let babyId      = defaults.string(forKey: "SiriSession_babyId"),
+            let supabaseUrl = defaults.string(forKey: "SiriSession_supabaseUrl"),
+            let anonKey     = defaults.string(forKey: "SiriSession_supabaseAnonKey")
+        else {
+            return .result(dialog: "Abra o Lado a Lado primeiro para ativar o Siri.")
+        }
+
+        func makeRequest(table: String, select: String) -> URLRequest? {
+            var components = URLComponents(string: "\(supabaseUrl)/rest/v1/\(table)")
+            components?.queryItems = [
+                URLQueryItem(name: "select",  value: select),
+                URLQueryItem(name: "baby_id", value: "eq.\(babyId)"),
+                URLQueryItem(name: "order",   value: "measured_at.desc"),
+                URLQueryItem(name: "limit",   value: "1"),
+            ]
+            guard let url = components?.url else { return nil }
+            var req = URLRequest(url: url)
+            req.httpMethod = "GET"
+            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            req.setValue(anonKey,            forHTTPHeaderField: "apikey")
+            req.setValue("Bearer \(token)",  forHTTPHeaderField: "Authorization")
+            req.setValue("ladoalado",        forHTTPHeaderField: "Accept-Profile")
+            return req
+        }
+
+        guard
+            let weightReq = makeRequest(table: "baby_weights", select: "weight_grams,measured_at"),
+            let heightReq = makeRequest(table: "baby_heights", select: "height_mm,measured_at")
+        else {
+            return .result(dialog: "Configuração inválida. Abra o app e tente novamente.")
+        }
+
+        async let weightFetch = URLSession.shared.data(for: weightReq)
+        async let heightFetch = URLSession.shared.data(for: heightReq)
+
+        let (weightData, weightResponse) = try await weightFetch
+        let (heightData, _)              = try await heightFetch
+
+        if let http = weightResponse as? HTTPURLResponse, http.statusCode == 401 {
+            return .result(dialog: "Sessão expirada. Abra o Lado a Lado e faça login novamente.")
+        }
+
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        dateFormatter.locale = Locale(identifier: "pt_BR")
+
+        let displayFormatter = DateFormatter()
+        displayFormatter.dateFormat = "d 'de' MMMM"
+        displayFormatter.locale = Locale(identifier: "pt_BR")
+
+        func formatDate(_ str: String) -> String {
+            guard let date = dateFormatter.date(from: str) else { return str }
+            return displayFormatter.string(from: date)
+        }
+
+        var weightPart = ""
+        if
+            let json  = try? JSONSerialization.jsonObject(with: weightData) as? [[String: Any]],
+            let first = json.first,
+            let grams = first["weight_grams"] as? Int,
+            let dateStr = first["measured_at"] as? String
+        {
+            let kg    = Double(grams) / 1000.0
+            let kgStr = String(format: "%.3g", kg).replacingOccurrences(of: ".", with: ",")
+            weightPart = "Peso: \(kgStr) kg, medido em \(formatDate(dateStr))."
+        }
+
+        var heightPart = ""
+        if
+            let json  = try? JSONSerialization.jsonObject(with: heightData) as? [[String: Any]],
+            let first = json.first,
+            let mm    = first["height_mm"] as? Int,
+            let dateStr = first["measured_at"] as? String
+        {
+            let cm    = Double(mm) / 10.0
+            let cmStr = String(format: "%.4g", cm).replacingOccurrences(of: ".", with: ",")
+            heightPart = "Altura: \(cmStr) cm, medida em \(formatDate(dateStr))."
+        }
+
+        if weightPart.isEmpty && heightPart.isEmpty {
+            return .result(dialog: "Nenhuma medida registrada ainda. Abra o Lado a Lado para cadastrar o peso e a altura do bebê.")
+        }
+
+        let dialog = [weightPart, heightPart].filter { !$0.isEmpty }.joined(separator: " ")
+        return .result(dialog: IntentDialog(stringLiteral: dialog))
+    }
+}
+
 // MARK: - App Shortcuts (frases reconhecidas pelo Siri)
 
 @available(iOS 16.0, *)
@@ -209,6 +312,16 @@ struct LadoALadoShortcuts: AppShortcutsProvider {
             ],
             shortTitle: "Última Mamada",
             systemImageName: "clock.fill"
+        )
+        AppShortcut(
+            intent: LastMeasurementsIntent(),
+            phrases: [
+                "Quais as medidas do meu bebê no \(.applicationName)",
+                "Qual o peso do meu bebê no \(.applicationName)",
+                "Medidas do bebê no \(.applicationName)",
+            ],
+            shortTitle: "Medidas do Bebê",
+            systemImageName: "ruler.fill"
         )
     }
 }
