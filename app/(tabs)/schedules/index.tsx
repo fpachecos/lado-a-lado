@@ -17,6 +17,7 @@ import { VisitSchedule } from '@/types/database';
 import { BlurView } from 'expo-blur';
 import { format, parse } from 'date-fns';
 import * as Clipboard from 'expo-clipboard';
+import { Ionicons } from '@expo/vector-icons';
 import { GradientBackground } from '@/components/GradientBackground';
 import { useUserContext } from '@/lib/user-context';
 
@@ -142,7 +143,7 @@ export default function SchedulesScreen() {
       {/* Barra de busca */}
       <View style={styles.searchContainer}>
         <BlurView intensity={80} tint="light" style={styles.searchBar}>
-          <Text style={styles.searchIcon}>🔍</Text>
+          <Ionicons name="search-outline" size={16} color={Colors.textSecondary} />
           <TextInput
             style={styles.searchInput}
             placeholder="Buscar agendas..."
@@ -196,7 +197,7 @@ export default function SchedulesScreen() {
                         handleCopyId(schedule.id);
                       }}
                     >
-                      <Text style={styles.copyButtonText}>📋</Text>
+                      <Ionicons name="copy-outline" size={14} color={Colors.textSecondary} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -208,7 +209,10 @@ export default function SchedulesScreen() {
                       router.push(`/(tabs)/visits?scheduleId=${schedule.id}`);
                     }}
                   >
-                    <Text style={styles.visitsButtonText}>👥 Acompanhar visitas</Text>
+                    <View style={styles.visitsButtonInner}>
+                      <Ionicons name="people-outline" size={14} color={Colors.white} />
+                      <Text style={styles.visitsButtonText}>Acompanhar visitas</Text>
+                    </View>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.deleteButton}
@@ -233,7 +237,7 @@ export default function SchedulesScreen() {
             style={styles.fabButton}
             onPress={() => router.push('/(tabs)/schedules/new')}
           >
-            <Text style={styles.fabIcon}>✏️</Text>
+            <Ionicons name="create-outline" size={18} color={Colors.primary} />
             <Text style={styles.fabText}>Nova Agenda</Text>
           </TouchableOpacity>
         </BlurView>
@@ -393,13 +397,18 @@ const styles = StyleSheet.create({
   visitsButton: {
     paddingVertical: 6,
     paddingHorizontal: 10,
-    backgroundColor: Colors.cardMint,
+    backgroundColor: Colors.secondary,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: Colors.borderMint,
   },
+  visitsButtonInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
   visitsButtonText: {
-    color: Colors.text,
+    color: Colors.white,
     fontSize: 13,
     fontWeight: '600',
   },
@@ -437,10 +446,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 14,
     paddingHorizontal: 24,
-  },
-  fabIcon: {
-    fontSize: 18,
-    marginRight: 8,
   },
   fabText: {
     fontSize: 16,

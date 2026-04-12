@@ -14,6 +14,7 @@ import { Colors } from '@/constants/Colors';
 import { VisitSchedule, VisitSlot, VisitBooking } from '@/types/database';
 import { format, parse } from 'date-fns';
 import { BlurView } from 'expo-blur';
+import { Ionicons } from '@expo/vector-icons';
 import { GradientBackground } from '@/components/GradientBackground';
 import { useUserContext } from '@/lib/user-context';
 
@@ -141,7 +142,7 @@ export default function VisitsScreen() {
       {/* Barra de busca */}
       <View style={styles.searchContainer}>
         <BlurView intensity={80} tint="light" style={styles.searchBar}>
-          <Text style={styles.searchIcon}>🔍</Text>
+          <Ionicons name="search-outline" size={16} color={Colors.textSecondary} />
           <TextInput
             style={styles.searchInput}
             placeholder="Buscar visitas..."
