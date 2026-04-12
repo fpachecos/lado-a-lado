@@ -47,6 +47,7 @@ export default function MainLayout() {
         <Stack.Screen name="weight" />
         <Stack.Screen name="feedings" />
         <Stack.Screen name="feedings-report" />
+        <Stack.Screen name="calendario" />
       </Stack>
     </UserProvider>
   );
