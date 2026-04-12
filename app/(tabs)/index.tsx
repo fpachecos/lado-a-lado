@@ -8,7 +8,6 @@ import {
   Alert,
   Modal,
   Platform,
-  Dimensions,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
@@ -18,11 +17,6 @@ import { Baby, Companion } from '@/types/database';
 import { isPremiumUser, getOfferings, purchasePackage, restorePurchases } from '@/lib/revenuecat';
 import { GradientBackground } from '@/components/GradientBackground';
 import { useUserContext } from '@/lib/user-context';
-
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const TILE_GAP = 10;
-const TILE_PADDING_H = 18;
-const TILE_SIZE = (SCREEN_WIDTH - TILE_PADDING_H * 2 - TILE_GAP) / 2;
 
 interface BabyAction {
   emoji: string;
@@ -489,7 +483,7 @@ const styles = StyleSheet.create({
 
   // ── Content ──
   content: {
-    paddingHorizontal: TILE_PADDING_H,
+    paddingHorizontal: 18,
     paddingBottom: 32,
     gap: 12,
   },
@@ -560,13 +554,13 @@ const styles = StyleSheet.create({
   iconGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: TILE_GAP,
-    paddingHorizontal: 14,
+    gap: 10,
+    paddingHorizontal: 12,
     paddingBottom: 14,
   },
   iconTile: {
-    width: TILE_SIZE,
-    height: TILE_SIZE,
+    width: '48%',
+    aspectRatio: 1,
     backgroundColor: Colors.glass,
     borderRadius: 20,
     borderWidth: 1,
