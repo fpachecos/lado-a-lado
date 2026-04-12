@@ -11,6 +11,9 @@ export interface Baby {
   name: string | null;
   gender: 'male' | 'female' | null;
   birth_date: string | null;
+  feeding_notification_enabled: boolean;
+  feeding_notification_hours: number;
+  milestone_notification_enabled: boolean;
   created_at: string;
   updated_at: string;
 }

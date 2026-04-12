@@ -8,6 +8,7 @@ import {
   Alert,
   Platform,
   ScrollView,
+  Switch,
 } from 'react-native';
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
@@ -17,6 +18,7 @@ import { GradientBackground } from '@/components/GradientBackground';
 import DatePicker from '@/components/DatePicker';
 import { parseISO } from 'date-fns';
 import { useUserContext } from '@/lib/user-context';
+import { cancelFeedingReminder, cancelMilestoneNotifications } from '@/lib/notifications';
 
 export default function BabyScreen() {
   const { effectiveUserId } = useUserContext();
@@ -25,6 +27,9 @@ export default function BabyScreen() {
   const [name, setName] = useState('');
   const [gender, setGender] = useState<'male' | 'female' | null>(null);
   const [birthDate, setBirthDate] = useState<Date | null>(null);
+  const [feedingNotifEnabled, setFeedingNotifEnabled] = useState(false);
+  const [feedingNotifHours, setFeedingNotifHours] = useState(3);
+  const [milestoneNotifEnabled, setMilestoneNotifEnabled] = useState(false);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
 
@@ -50,6 +55,9 @@ export default function BabyScreen() {
         setName(data.name || '');
         setGender(data.gender);
         setBirthDate(data.birth_date ? parseISO(data.birth_date) : null);
+        setFeedingNotifEnabled(data.feeding_notification_enabled ?? false);
+        setFeedingNotifHours(data.feeding_notification_hours ?? 3);
+        setMilestoneNotifEnabled(data.milestone_notification_enabled ?? false);
       }
     } catch (error) {
       console.error('Error loading baby:', error);
@@ -71,6 +79,12 @@ export default function BabyScreen() {
 
       const birthDateStr = birthDate ? birthDate.toISOString().split('T')[0] : null;
 
+      const notifPayload = {
+        feeding_notification_enabled: feedingNotifEnabled,
+        feeding_notification_hours: feedingNotifHours,
+        milestone_notification_enabled: milestoneNotifEnabled,
+      };
+
       if (baby) {
         // Atualizar
         const { error } = await supabase
@@ -79,6 +93,7 @@ export default function BabyScreen() {
             name: name.trim(),
             gender,
             birth_date: birthDateStr,
+            ...notifPayload,
           })
           .eq('id', baby.id);
 
@@ -92,10 +107,15 @@ export default function BabyScreen() {
             name: name.trim(),
             gender,
             birth_date: birthDateStr,
+            ...notifPayload,
           });
 
         if (error) throw error;
       }
+
+      // Cancela notificações desabilitadas
+      if (!feedingNotifEnabled) cancelFeedingReminder();
+      if (!milestoneNotifEnabled) cancelMilestoneNotifications();
 
       router.replace('/(tabs)');
     } catch (error: any) {
@@ -183,6 +203,59 @@ export default function BabyScreen() {
                 👶 Menina
               </Text>
             </TouchableOpacity>
+          </View>
+
+          <Text style={[styles.label, { marginTop: 24 }]}>Notificações</Text>
+
+          <View style={styles.notifRow}>
+            <View style={styles.notifInfo}>
+              <Text style={styles.notifTitle}>Lembrete de mamada</Text>
+              <Text style={styles.notifSubtitle}>
+                Avisa 15 min antes de completar o intervalo
+              </Text>
+            </View>
+            <Switch
+              value={feedingNotifEnabled}
+              onValueChange={setFeedingNotifEnabled}
+              trackColor={{ false: Colors.neutral, true: Colors.primary }}
+              thumbColor={Colors.white}
+            />
+          </View>
+
+          {feedingNotifEnabled && (
+            <View style={styles.hoursRow}>
+              <Text style={styles.hoursLabel}>Intervalo entre mamadas</Text>
+              <View style={styles.stepperRow}>
+                <TouchableOpacity
+                  style={styles.stepperBtn}
+                  onPress={() => setFeedingNotifHours(h => Math.max(1, h - 1))}
+                >
+                  <Text style={styles.stepperBtnText}>−</Text>
+                </TouchableOpacity>
+                <Text style={styles.stepperValue}>{feedingNotifHours}h</Text>
+                <TouchableOpacity
+                  style={styles.stepperBtn}
+                  onPress={() => setFeedingNotifHours(h => Math.min(8, h + 1))}
+                >
+                  <Text style={styles.stepperBtnText}>+</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
+          <View style={[styles.notifRow, { marginTop: 12 }]}>
+            <View style={styles.notifInfo}>
+              <Text style={styles.notifTitle}>Marcos do desenvolvimento</Text>
+              <Text style={styles.notifSubtitle}>
+                Avisa quando uma nova fase estiver próxima
+              </Text>
+            </View>
+            <Switch
+              value={milestoneNotifEnabled}
+              onValueChange={setMilestoneNotifEnabled}
+              trackColor={{ false: Colors.neutral, true: Colors.primary }}
+              thumbColor={Colors.white}
+            />
           </View>
 
           <TouchableOpacity
@@ -310,6 +383,70 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     textAlign: 'center',
     marginTop: 40,
+  },
+  notifRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderRadius: 16,
+    gap: 12,
+  },
+  notifInfo: {
+    flex: 1,
+  },
+  notifTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.text,
+  },
+  notifSubtitle: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  hoursRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.glass,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: Colors.glassBorder,
+    marginBottom: 4,
+  },
+  hoursLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: Colors.textSecondary,
+  },
+  stepperRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  stepperBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.primary + '20',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepperBtnText: {
+    fontSize: 20,
+    color: Colors.primary,
+    fontWeight: '700',
+    lineHeight: 24,
+  },
+  stepperValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.text,
+    minWidth: 32,
+    textAlign: 'center',
   },
 });
 

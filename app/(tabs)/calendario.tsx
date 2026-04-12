@@ -13,6 +13,7 @@ import { Colors } from '@/constants/Colors';
 import { GradientBackground } from '@/components/GradientBackground';
 import { supabase } from '@/lib/supabase';
 import { useUserContext } from '@/lib/user-context';
+import { scheduleUpcomingMilestoneNotifications } from '@/lib/notifications';
 
 type MarcoTipo = 'vacina' | 'salto' | 'desenvolvimento';
 
@@ -743,12 +744,20 @@ export default function CalendarioScreen() {
     if (!effectiveUserId) return;
     supabase
       .from('babies')
-      .select('birth_date')
+      .select('birth_date, name, milestone_notification_enabled')
       .eq('user_id', effectiveUserId)
       .single()
       .then(({ data }) => {
         if (data?.birth_date) {
-          setIdadeEmDias(differenceInDays(new Date(), parseISO(data.birth_date)));
+          const birthDate = parseISO(data.birth_date);
+          setIdadeEmDias(differenceInDays(new Date(), birthDate));
+          if (data.milestone_notification_enabled) {
+            scheduleUpcomingMilestoneNotifications(
+              birthDate,
+              data.name ?? 'Seu bebê',
+              GRUPOS.map((g) => ({ id: g.id, label: g.label, diasMin: g.diasMin }))
+            );
+          }
         }
       });
   }, [effectiveUserId]);
