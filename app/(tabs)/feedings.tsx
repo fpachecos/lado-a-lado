@@ -22,6 +22,7 @@ import { GradientBackground } from '@/components/GradientBackground';
 import DatePicker from '@/components/DatePicker';
 import { useUserContext } from '@/lib/user-context';
 import TimePicker from '@/components/TimePicker';
+import { scheduleFeedingReminder } from '@/lib/notifications';
 
 type Breast = 'left' | 'right' | 'both';
 
@@ -228,6 +229,10 @@ export default function FeedingsScreen() {
       } else {
         const { error } = await supabase.from('baby_feedings').insert({ baby_id: baby.id, ...payload });
         if (error) throw error;
+        // Agenda notificação se habilitada
+        if (baby.feeding_notification_enabled) {
+          scheduleFeedingReminder(startDateTime, baby.feeding_notification_hours);
+        }
       }
       setShowModal(false);
       await loadData();

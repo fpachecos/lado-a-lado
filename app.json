@@ -38,7 +38,15 @@
           "origin": false
         }
       ],
-      "./plugins/withSiri"
+      "./plugins/withSiri",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#FF6F61",
+          "sounds": []
+        }
+      ]
     ],
     "scheme": "ladoalado",
     "extra": {
