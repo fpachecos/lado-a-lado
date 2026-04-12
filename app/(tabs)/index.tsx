@@ -9,6 +9,7 @@ import {
   Modal,
   Platform,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
@@ -18,19 +19,21 @@ import { isPremiumUser, getOfferings, purchasePackage, restorePurchases } from '
 import { GradientBackground } from '@/components/GradientBackground';
 import { useUserContext } from '@/lib/user-context';
 
+type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
+
 interface BabyAction {
-  emoji: string;
+  icon: IoniconName;
   label: string;
   route: string;
 }
 
 const BABY_ACTIONS: BabyAction[] = [
-  { emoji: '📋', label: 'Agendas', route: '/(tabs)/schedules' },
-  { emoji: '⚖️', label: 'Crescimento', route: '/(tabs)/weight' },
-  { emoji: '🍼', label: 'Mamadas', route: '/(tabs)/feedings' },
-  { emoji: '📅', label: 'Calendário', route: '/(tabs)/calendario' },
-  { emoji: '✅', label: 'Visitas', route: '/(tabs)/visits' },
-  { emoji: '✏️', label: 'Editar bebê', route: '/(tabs)/baby' },
+  { icon: 'calendar-outline',       label: 'Agendas',     route: '/(tabs)/schedules' },
+  { icon: 'trending-up-outline',    label: 'Crescimento', route: '/(tabs)/weight' },
+  { icon: 'cafe-outline',           label: 'Mamadas',     route: '/(tabs)/feedings' },
+  { icon: 'today-outline',          label: 'Calendário',  route: '/(tabs)/calendario' },
+  { icon: 'home-outline',           label: 'Visitas',     route: '/(tabs)/visits' },
+  { icon: 'person-outline',         label: 'Editar bebê', route: '/(tabs)/baby' },
 ];
 
 export default function HomeScreen() {
@@ -212,16 +215,18 @@ export default function HomeScreen() {
               >
                 <View style={styles.sectionToggleLeft}>
                   <View style={styles.sectionAvatar}>
-                    <Text style={styles.sectionAvatarEmoji}>
-                      {baby.gender === 'male' ? '👶' : baby.gender === 'female' ? '👧' : '🍼'}
-                    </Text>
+                    <Ionicons name="happy-outline" size={24} color={Colors.primary} />
                   </View>
                   <View>
                     <Text style={styles.sectionEyebrow}>Bebê</Text>
                     <Text style={styles.sectionName}>{baby.name || 'Sem nome'}</Text>
                   </View>
                 </View>
-                <Text style={styles.toggleChevron}>{babyExpanded ? '▲' : '▼'}</Text>
+                <Ionicons
+                  name={babyExpanded ? 'chevron-up' : 'chevron-down'}
+                  size={18}
+                  color={Colors.textTertiary}
+                />
               </TouchableOpacity>
 
               {/* Grid de ícones */}
@@ -234,7 +239,9 @@ export default function HomeScreen() {
                       activeOpacity={0.8}
                       onPress={() => router.push(action.route as any)}
                     >
-                      <Text style={styles.iconTileEmoji}>{action.emoji}</Text>
+                      <View style={styles.iconBadge}>
+                        <Ionicons name={action.icon} size={28} color={Colors.primary} />
+                      </View>
                       <Text style={styles.iconTileLabel}>{action.label}</Text>
                     </TouchableOpacity>
                   ))}
@@ -266,14 +273,18 @@ export default function HomeScreen() {
             >
               <View style={styles.sectionToggleLeft}>
                 <View style={[styles.sectionAvatar, styles.sectionAvatarMint]}>
-                  <Text style={styles.sectionAvatarEmoji}>👥</Text>
+                  <Ionicons name="people-outline" size={24} color={Colors.secondary} />
                 </View>
                 <View>
                   <Text style={styles.sectionEyebrow}>Seção</Text>
-                  <Text style={styles.sectionName}>Acompanhantes</Text>
+                  <Text style={[styles.sectionName, styles.sectionNameMint]}>Acompanhantes</Text>
                 </View>
               </View>
-              <Text style={styles.toggleChevron}>{companionsExpanded ? '▲' : '▼'}</Text>
+              <Ionicons
+                name={companionsExpanded ? 'chevron-up' : 'chevron-down'}
+                size={18}
+                color={Colors.textTertiary}
+              />
             </TouchableOpacity>
 
             {/* Grid de acompanhantes */}
@@ -304,7 +315,9 @@ export default function HomeScreen() {
                   activeOpacity={0.8}
                   onPress={() => router.push('/(tabs)/companion/new')}
                 >
-                  <Text style={styles.iconTileAddPlus}>+</Text>
+                  <View style={[styles.iconBadge, styles.iconBadgeMint]}>
+                    <Ionicons name="add" size={28} color={Colors.secondary} />
+                  </View>
                   <Text style={[styles.iconTileLabel, styles.iconTileAddLabel]}>Adicionar</Text>
                 </TouchableOpacity>
               </View>
@@ -527,9 +540,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.cardMint,
     borderColor: Colors.borderMint,
   },
-  sectionAvatarEmoji: {
-    fontSize: 24,
-  },
   sectionEyebrow: {
     fontSize: 11,
     fontWeight: '800',
@@ -544,12 +554,6 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     letterSpacing: -0.3,
   },
-  toggleChevron: {
-    fontSize: 12,
-    color: Colors.textTertiary,
-    fontWeight: '700',
-  },
-
   // ── Icon Grid ──
   iconGrid: {
     flexDirection: 'row',
@@ -560,14 +564,14 @@ const styles = StyleSheet.create({
   },
   iconTile: {
     width: '48%',
-    aspectRatio: 1,
+    height: 110,
     backgroundColor: Colors.glass,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: Colors.glassBorder,
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
     padding: 12,
   },
   iconTileMint: {
@@ -579,21 +583,26 @@ const styles = StyleSheet.create({
     borderColor: Colors.secondary,
     backgroundColor: 'transparent',
   },
-  iconTileEmoji: {
-    fontSize: 36,
+  iconBadge: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    backgroundColor: Colors.cardPrimary,
+    borderWidth: 1,
+    borderColor: Colors.borderPrimary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconBadgeMint: {
+    backgroundColor: Colors.cardMint,
+    borderColor: Colors.borderMint,
   },
   iconTileLabel: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     color: Colors.text,
     textAlign: 'center',
     letterSpacing: -0.1,
-  },
-  iconTileAddPlus: {
-    fontSize: 36,
-    color: Colors.secondary,
-    fontWeight: '300',
-    lineHeight: 40,
   },
   iconTileAddLabel: {
     color: Colors.secondary,
@@ -603,7 +612,7 @@ const styles = StyleSheet.create({
   companionAvatarLarge: {
     width: 52,
     height: 52,
-    borderRadius: 26,
+    borderRadius: 16,
     backgroundColor: Colors.secondary,
     justifyContent: 'center',
     alignItems: 'center',
@@ -612,6 +621,10 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '700',
     color: '#fff',
+  },
+
+  sectionNameMint: {
+    color: Colors.secondary,
   },
 
   // ── Empty baby card ──
