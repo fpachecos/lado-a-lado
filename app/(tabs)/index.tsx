@@ -377,6 +377,12 @@ export default function HomeScreen() {
               <Text style={styles.menuItemText}>Controle de mamadas</Text>
             </TouchableOpacity>
             <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => { setShowBabyMenu(false); router.push('/(tabs)/calendario'); }}
+            >
+              <Text style={styles.menuItemText}>Calendário de desenvolvimento</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
               style={[styles.menuItem, styles.menuItemCancel]}
               onPress={() => setShowBabyMenu(false)}
             >
