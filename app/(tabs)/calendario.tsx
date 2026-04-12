@@ -783,7 +783,10 @@ export default function CalendarioScreen() {
         >
           <Text style={styles.backButtonText}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Calendário</Text>
+        <View style={styles.headerTitles}>
+          <Text style={styles.eyebrow}>AGENDA</Text>
+          <Text style={styles.title}>Calendário</Text>
+        </View>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -985,17 +988,18 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     borderColor: Colors.glassBorder,
+    marginRight: 12,
   },
   backButtonText: {
     fontSize: 20,
     color: Colors.text,
     fontWeight: '600',
   },
+  headerTitles: { flex: 1 },
+  eyebrow: { fontSize: 11, fontWeight: '800', color: Colors.textTertiary, letterSpacing: 1, textTransform: 'uppercase' },
   title: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 28,
+    fontWeight: '800',
     color: Colors.text,
   },
   headerSpacer: {

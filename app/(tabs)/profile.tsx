@@ -248,9 +248,12 @@ export default function ProfileScreen() {
           onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)')}
           style={styles.backButton}
         >
-          <Text style={styles.backButtonText}>← Voltar</Text>
+          <Text style={styles.backButtonText}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Perfil</Text>
+        <View style={styles.headerTitles}>
+          <Text style={styles.eyebrow}>CONFIGURAÇÕES</Text>
+          <Text style={styles.headerTitle}>Perfil</Text>
+        </View>
       </View>
 
       <View style={styles.content}>
@@ -525,31 +528,34 @@ const styles = StyleSheet.create({
 
   // ── Header ──
   header: {
-    paddingHorizontal: 22,
+    paddingHorizontal: 18,
     paddingTop: 60,
-    paddingBottom: 12,
+    paddingBottom: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
   },
   backButton: {
-    paddingVertical: 7,
-    paddingHorizontal: 14,
+    width: 40,
+    height: 40,
     borderRadius: 20,
     backgroundColor: Colors.glass,
     borderWidth: 1,
     borderColor: Colors.glassBorder,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
   backButtonText: {
-    color: Colors.textSecondary,
-    fontSize: 13,
+    fontSize: 20,
+    color: Colors.text,
     fontWeight: '600',
   },
+  headerTitles: { flex: 1 },
+  eyebrow: { fontSize: 11, fontWeight: '800', color: Colors.textTertiary, letterSpacing: 1, textTransform: 'uppercase' },
   headerTitle: {
-    fontSize: 22,
+    fontSize: 28,
     fontWeight: '800',
     color: Colors.text,
-    letterSpacing: -0.3,
   },
 
   // ── Content ──

@@ -227,7 +227,8 @@ export default function CompanionActivitiesScreen() {
           >
             <Text style={styles.backButtonText}>←</Text>
           </TouchableOpacity>
-          <View style={styles.headerText}>
+          <View style={styles.headerTitles}>
+            <Text style={styles.eyebrow}>ACOMPANHANTE</Text>
             <Text style={styles.title}>Atividades</Text>
             {companion && (
               <Text style={styles.subtitle}>{companion.name}</Text>
@@ -429,28 +430,33 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 20,
+    paddingHorizontal: 18,
     paddingTop: 60,
     paddingBottom: 16,
   },
   backButton: {
     width: 40,
     height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.glass,
+    borderWidth: 1,
+    borderColor: Colors.glassBorder,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
   backButtonText: {
-    fontSize: 24,
+    fontSize: 20,
     color: Colors.text,
     fontWeight: '600',
   },
-  headerText: {
+  headerTitles: {
     flex: 1,
   },
+  eyebrow: { fontSize: 11, fontWeight: '800', color: Colors.textTertiary, letterSpacing: 1, textTransform: 'uppercase' },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontWeight: '800',
     color: Colors.text,
   },
   subtitle: {
