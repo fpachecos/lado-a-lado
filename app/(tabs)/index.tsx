@@ -36,12 +36,11 @@ interface BabyAction {
 }
 
 const BABY_ACTIONS: BabyAction[] = [
-  { icon: 'calendar-outline',       label: 'Agendas',     route: '/(tabs)/schedules' },
-  { icon: 'trending-up-outline',    label: 'Crescimento', route: '/(tabs)/weight' },
+  { icon: 'home-outline',           label: 'Agenda de Visitas', route: '/(tabs)/schedules' },
+  { icon: 'trending-up-outline',    label: 'Crescimento',       route: '/(tabs)/weight' },
   { icon: 'baby-bottle-outline', iconSet: 'mci', label: 'Mamadas', route: '/(tabs)/feedings' },
-  { icon: 'today-outline',          label: 'Calendário',  route: '/(tabs)/calendario' },
-  { icon: 'home-outline',           label: 'Visitas',     route: '/(tabs)/visits' },
-  { icon: 'person-outline',         label: 'Editar bebê', route: '/(tabs)/baby' },
+  { icon: 'today-outline',          label: 'Calendário',        route: '/(tabs)/calendario' },
+  { icon: 'person-outline',         label: 'Editar bebê',       route: '/(tabs)/baby' },
 ];
 
 export default function HomeScreen() {
