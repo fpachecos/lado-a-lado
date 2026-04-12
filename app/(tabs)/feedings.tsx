@@ -307,7 +307,10 @@ export default function FeedingsScreen() {
           <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)')} style={styles.backButton}>
             <Text style={styles.backButtonText}>←</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>Mamadas</Text>
+          <View style={styles.headerTitles}>
+            <Text style={styles.eyebrow}>BEBÊ</Text>
+            <Text style={styles.title}>Mamadas</Text>
+          </View>
           <TouchableOpacity onPress={() => router.push('/(tabs)/feedings-report')} style={styles.reportButton}>
             <Text style={styles.reportButtonText}>Relatórios</Text>
           </TouchableOpacity>
@@ -590,7 +593,6 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 18,
     paddingTop: 60,
     paddingBottom: 16,
@@ -604,9 +606,12 @@ const styles = StyleSheet.create({
     borderColor: Colors.glassBorder,
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 12,
   },
   backButtonText: { fontSize: 20, color: Colors.text, fontWeight: '600' },
-  title: { fontSize: 22, fontWeight: '800', color: Colors.text, letterSpacing: -0.3 },
+  headerTitles: { flex: 1 },
+  eyebrow: { fontSize: 11, fontWeight: '800', color: Colors.textTertiary, letterSpacing: 1, textTransform: 'uppercase' },
+  title: { fontSize: 28, fontWeight: '800', color: Colors.text },
   reportButton: {
     paddingVertical: 7,
     paddingHorizontal: 14,

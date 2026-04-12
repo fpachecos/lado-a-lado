@@ -213,7 +213,10 @@ export default function FeedingsReportScreen() {
           >
             <Text style={styles.backButtonText}>←</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>Relatórios</Text>
+          <View style={styles.headerTitles}>
+            <Text style={styles.eyebrow}>MAMADAS</Text>
+            <Text style={styles.title}>Relatórios</Text>
+          </View>
           <View style={{ width: 40 }} />
         </View>
 
@@ -359,9 +362,12 @@ const styles = StyleSheet.create({
     borderColor: Colors.glassBorder,
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 12,
   },
   backButtonText: { fontSize: 20, color: Colors.text, fontWeight: '600' },
-  title: { fontSize: 22, fontWeight: '800', color: Colors.text, letterSpacing: -0.3 },
+  headerTitles: { flex: 1 },
+  eyebrow: { fontSize: 11, fontWeight: '800', color: Colors.textTertiary, letterSpacing: 1, textTransform: 'uppercase' },
+  title: { fontSize: 28, fontWeight: '800', color: Colors.text },
 
   // Content
   content: { paddingHorizontal: 18, paddingBottom: 40 },
