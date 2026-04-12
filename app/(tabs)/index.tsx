@@ -19,6 +19,12 @@ import { isPremiumUser, getOfferings, purchasePackage, restorePurchases } from '
 import { GradientBackground } from '@/components/GradientBackground';
 import { useUserContext } from '@/lib/user-context';
 
+function chunk<T>(arr: T[], size: number): T[][] {
+  const result: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) result.push(arr.slice(i, i + size));
+  return result;
+}
+
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
 interface BabyAction {
@@ -232,18 +238,24 @@ export default function HomeScreen() {
               {/* Grid de ícones */}
               {babyExpanded && (
                 <View style={styles.iconGrid}>
-                  {BABY_ACTIONS.map(action => (
-                    <TouchableOpacity
-                      key={action.route}
-                      style={styles.iconTile}
-                      activeOpacity={0.8}
-                      onPress={() => router.push(action.route as any)}
-                    >
-                      <View style={styles.iconBadge}>
-                        <Ionicons name={action.icon} size={28} color={Colors.primary} />
-                      </View>
-                      <Text style={styles.iconTileLabel}>{action.label}</Text>
-                    </TouchableOpacity>
+                  {chunk(BABY_ACTIONS, 2).map((row, rowIdx) => (
+                    <View key={rowIdx} style={styles.iconGridRow}>
+                      {row.map(action => (
+                        <TouchableOpacity
+                          key={action.route}
+                          style={styles.iconTile}
+                          activeOpacity={0.8}
+                          onPress={() => router.push(action.route as any)}
+                        >
+                          <View style={styles.iconBadge}>
+                            <Ionicons name={action.icon} size={28} color={Colors.primary} />
+                          </View>
+                          <Text style={styles.iconTileLabel}>{action.label}</Text>
+                        </TouchableOpacity>
+                      ))}
+                      {/* preenche célula vazia se row tiver só 1 item */}
+                      {row.length === 1 && <View style={styles.iconTilePlaceholder} />}
+                    </View>
                   ))}
                 </View>
               )}
@@ -288,40 +300,57 @@ export default function HomeScreen() {
             </TouchableOpacity>
 
             {/* Grid de acompanhantes */}
-            {companionsExpanded && (
-              <View style={styles.iconGrid}>
-                {companions.map(companion => (
-                  <TouchableOpacity
-                    key={companion.id}
-                    style={[styles.iconTile, styles.iconTileMint]}
-                    activeOpacity={0.8}
-                    onPress={() => {
-                      setSelectedCompanion(companion);
-                      setShowCompanionMenu(true);
-                    }}
-                  >
-                    <View style={styles.companionAvatarLarge}>
-                      <Text style={styles.companionAvatarText}>
-                        {companion.name.charAt(0).toUpperCase()}
-                      </Text>
+            {companionsExpanded && (() => {
+              const companionTiles = [
+                ...companions.map(companion => ({ type: 'companion' as const, companion })),
+                { type: 'add' as const },
+              ];
+              return (
+                <View style={styles.iconGrid}>
+                  {chunk(companionTiles, 2).map((row, rowIdx) => (
+                    <View key={rowIdx} style={styles.iconGridRow}>
+                      {row.map((item) =>
+                        item.type === 'companion' ? (
+                          <TouchableOpacity
+                            key={item.companion.id}
+                            style={[styles.iconTile, styles.iconTileMint]}
+                            activeOpacity={0.8}
+                            onPress={() => {
+                              setSelectedCompanion(item.companion);
+                              setShowCompanionMenu(true);
+                            }}
+                          >
+                            <View style={styles.companionAvatarLarge}>
+                              <Text style={styles.companionAvatarText}>
+                                {item.companion.name.charAt(0).toUpperCase()}
+                              </Text>
+                            </View>
+                            <Text style={styles.iconTileLabel} numberOfLines={2}>
+                              {item.companion.name}
+                            </Text>
+                          </TouchableOpacity>
+                        ) : (
+                          <TouchableOpacity
+                            key="add"
+                            style={[styles.iconTile, styles.iconTileAdd]}
+                            activeOpacity={0.8}
+                            onPress={() => router.push('/(tabs)/companion/new')}
+                          >
+                            <View style={[styles.iconBadge, styles.iconBadgeMint]}>
+                              <Ionicons name="add" size={28} color={Colors.secondary} />
+                            </View>
+                            <Text style={[styles.iconTileLabel, styles.iconTileAddLabel]}>
+                              Adicionar
+                            </Text>
+                          </TouchableOpacity>
+                        )
+                      )}
+                      {row.length === 1 && <View style={styles.iconTilePlaceholder} />}
                     </View>
-                    <Text style={styles.iconTileLabel} numberOfLines={2}>{companion.name}</Text>
-                  </TouchableOpacity>
-                ))}
-
-                {/* Tile de adicionar */}
-                <TouchableOpacity
-                  style={[styles.iconTile, styles.iconTileAdd]}
-                  activeOpacity={0.8}
-                  onPress={() => router.push('/(tabs)/companion/new')}
-                >
-                  <View style={[styles.iconBadge, styles.iconBadgeMint]}>
-                    <Ionicons name="add" size={28} color={Colors.secondary} />
-                  </View>
-                  <Text style={[styles.iconTileLabel, styles.iconTileAddLabel]}>Adicionar</Text>
-                </TouchableOpacity>
-              </View>
-            )}
+                  ))}
+                </View>
+              );
+            })()}
           </View>
 
           {/* Card premium */}
@@ -498,7 +527,6 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 18,
     paddingBottom: 32,
-    gap: 12,
   },
 
   // ── Section ──
@@ -508,6 +536,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.borderWarm,
     overflow: 'hidden',
+    marginBottom: 12,
     shadowColor: Colors.shadowWarm,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 1,
@@ -556,14 +585,16 @@ const styles = StyleSheet.create({
   },
   // ── Icon Grid ──
   iconGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
     paddingHorizontal: 12,
     paddingBottom: 14,
+    gap: 10,
+  },
+  iconGridRow: {
+    flexDirection: 'row',
+    gap: 10,
   },
   iconTile: {
-    width: '48%',
+    flex: 1,
     height: 110,
     backgroundColor: Colors.glass,
     borderRadius: 20,
@@ -606,6 +637,10 @@ const styles = StyleSheet.create({
   },
   iconTileAddLabel: {
     color: Colors.secondary,
+  },
+  iconTilePlaceholder: {
+    flex: 1,
+    height: 110,
   },
 
   // ── Companion Avatar (large) ──
