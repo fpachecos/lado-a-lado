@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { differenceInDays, parseISO } from 'date-fns';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { GradientBackground } from '@/components/GradientBackground';
 import { supabase } from '@/lib/supabase';
@@ -852,12 +853,18 @@ export default function CalendarioScreen() {
               <View style={styles.grupoHeaderLabelBox}>
                 {isAtual && (
                   <View style={styles.agoraBadge}>
-                    <Text style={styles.agoraBadgeText}>📍 AGORA</Text>
+                    <View style={styles.agoraBadgeInner}>
+                    <Ionicons name="radio-button-on" size={11} color={Colors.primary} />
+                    <Text style={styles.agoraBadgeText}>AGORA</Text>
+                  </View>
                   </View>
                 )}
                 {isPassado && (
                   <View style={styles.passadoBadge}>
-                    <Text style={styles.passadoBadgeText}>✓ CONCLUÍDO</Text>
+                    <View style={styles.agoraBadgeInner}>
+                    <Ionicons name="checkmark-circle" size={11} color={Colors.success} />
+                    <Text style={styles.passadoBadgeText}>CONCLUÍDO</Text>
+                  </View>
                   </View>
                 )}
                 <Text style={[styles.grupoLabel, isAtual && styles.grupoLabelAtual, isPassado && styles.grupoLabelPassado]}>{grupo.label}</Text>
@@ -1102,6 +1109,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
     marginBottom: 4,
+  },
+  agoraBadgeInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   agoraBadgeText: {
     fontSize: 10,

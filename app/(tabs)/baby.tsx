@@ -10,6 +10,7 @@ import {
   ScrollView,
   Switch,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { Colors } from '@/constants/Colors';
@@ -177,14 +178,10 @@ export default function BabyScreen() {
               ]}
               onPress={() => setGender('male')}
             >
-              <Text
-                style={[
-                  styles.genderButtonText,
-                  gender === 'male' && styles.genderButtonTextActive,
-                ]}
-              >
-                👶 Menino
-              </Text>
+              <View style={styles.genderButtonInner}>
+                <Ionicons name="male-outline" size={16} color={gender === 'male' ? Colors.white : Colors.textSecondary} />
+                <Text style={[styles.genderButtonText, gender === 'male' && styles.genderButtonTextActive]}>Menino</Text>
+              </View>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -194,14 +191,10 @@ export default function BabyScreen() {
               ]}
               onPress={() => setGender('female')}
             >
-              <Text
-                style={[
-                  styles.genderButtonText,
-                  gender === 'female' && styles.genderButtonTextActive,
-                ]}
-              >
-                👶 Menina
-              </Text>
+              <View style={styles.genderButtonInner}>
+                <Ionicons name="female-outline" size={16} color={gender === 'female' ? Colors.white : Colors.textSecondary} />
+                <Text style={[styles.genderButtonText, gender === 'female' && styles.genderButtonTextActive]}>Menina</Text>
+              </View>
             </TouchableOpacity>
           </View>
 
@@ -351,9 +344,14 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.glass,
     alignItems: 'center',
   },
+  genderButtonInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   genderButtonActive: {
     borderColor: Colors.primary,
-    backgroundColor: Colors.primary + '20',
+    backgroundColor: Colors.primary,
   },
   genderButtonText: {
     fontSize: 16,

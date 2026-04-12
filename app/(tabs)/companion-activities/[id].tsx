@@ -10,6 +10,7 @@ import {
   Platform,
   Modal,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/lib/supabase';
@@ -282,14 +283,14 @@ export default function CompanionActivitiesScreen() {
                         onPress={() => moveActivity(index, index - 1)}
                         disabled={index === 0 || movingIndex !== null}
                       >
-                        <Text style={[styles.arrowText, index === 0 && styles.arrowTextDisabled]}>↑</Text>
+                        <Ionicons name="chevron-up" size={20} color={index === 0 ? Colors.textTertiary : Colors.text} />
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={[styles.arrowButton, index === activities.length - 1 && styles.arrowButtonDisabled]}
                         onPress={() => moveActivity(index, index + 1)}
                         disabled={index === activities.length - 1 || movingIndex !== null}
                       >
-                        <Text style={[styles.arrowText, index === activities.length - 1 && styles.arrowTextDisabled]}>↓</Text>
+                        <Ionicons name="chevron-down" size={20} color={index === activities.length - 1 ? Colors.textTertiary : Colors.text} />
                       </TouchableOpacity>
                     </View>
                     <View style={styles.reorderContent}>
@@ -307,7 +308,7 @@ export default function CompanionActivitiesScreen() {
                         onPress={() => handleToggleCompleted(activity)}
                         disabled={togglingId === activity.id}
                       >
-                        {activity.completed && <Text style={styles.checkmark}>✓</Text>}
+                        {activity.completed && <Ionicons name="checkmark" size={14} color={Colors.white} />}
                       </TouchableOpacity>
                       <Text style={[styles.activityIndex, activity.completed && styles.activityIndexCompleted]}>
                         #{index + 1}
@@ -332,7 +333,10 @@ export default function CompanionActivitiesScreen() {
                         {activity.content}
                       </MarkdownRenderer>
                       {activity.completed && (
-                        <Text style={styles.completedLabel}>Concluída ✓</Text>
+                        <View style={styles.completedLabelRow}>
+                          <Ionicons name="checkmark-circle" size={13} color={Colors.success} />
+                          <Text style={styles.completedLabel}>Concluída</Text>
+                        </View>
                       )}
                     </View>
                   </>
@@ -368,7 +372,7 @@ export default function CompanionActivitiesScreen() {
                   {editingActivity ? 'Editar Atividade' : 'Nova Atividade'}
                 </Text>
                 <TouchableOpacity onPress={() => setShowModal(false)}>
-                  <Text style={styles.modalClose}>✕</Text>
+                  <Ionicons name="close" size={22} color={Colors.textSecondary} />
                 </TouchableOpacity>
               </View>
 
@@ -571,11 +575,16 @@ const styles = StyleSheet.create({
   completedText: {
     textDecorationLine: 'line-through',
   },
+  completedLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 6,
+  },
   completedLabel: {
     fontSize: 12,
-    color: Colors.secondary,
+    color: Colors.success,
     fontWeight: '600',
-    marginTop: 6,
   },
   activityActions: {
     flexDirection: 'row',

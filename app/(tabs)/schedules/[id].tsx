@@ -12,6 +12,7 @@ import {
   Keyboard,
   Platform,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useLocalSearchParams, router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
@@ -459,7 +460,7 @@ export default function ScheduleDetailScreen() {
               Código: {schedule.id}
             </Text>
             <TouchableOpacity style={styles.copyButton} onPress={handleCopyId}>
-              <Text style={styles.copyButtonText}>📋</Text>
+              <Ionicons name="copy-outline" size={14} color={Colors.textSecondary} />
             </TouchableOpacity>
           </View>
           {editingMessage ? (
@@ -636,7 +637,7 @@ export default function ScheduleDetailScreen() {
                         onPress={() => setSlotIsSkipped(!slotIsSkipped)}
                       >
                         <View style={[styles.checkbox, slotIsSkipped && styles.checkboxChecked]}>
-                          {slotIsSkipped && <Text style={styles.checkmark}>✓</Text>}
+                          {slotIsSkipped && <Ionicons name="checkmark" size={14} color={Colors.white} />}
                         </View>
                         <Text style={styles.checkboxLabel}>Pular este slot (ex: almoço)</Text>
                       </TouchableOpacity>
@@ -675,9 +676,12 @@ export default function ScheduleDetailScreen() {
                       />
 
                       <View style={styles.infoBox}>
-                        <Text style={styles.infoText}>
-                          ℹ️ O aplicativo criará automaticamente múltiplos slots sequenciais dentro do período especificado, iniciando cada slot quando o anterior terminar.
-                        </Text>
+                        <View style={styles.infoTextRow}>
+                          <Ionicons name="information-circle-outline" size={16} color={Colors.textSecondary} />
+                          <Text style={styles.infoText}>
+                            O aplicativo criará automaticamente múltiplos slots sequenciais dentro do período especificado, iniciando cada slot quando o anterior terminar.
+                          </Text>
+                        </View>
                       </View>
                     </>
                   )}
@@ -1027,6 +1031,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.secondary + '40',
+  },
+  infoTextRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
   },
   infoText: {
     fontSize: 13,

@@ -9,7 +9,7 @@ import {
   Modal,
   Platform,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
@@ -26,9 +26,11 @@ function chunk<T>(arr: T[], size: number): T[][] {
 }
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
+type MCIName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 
 interface BabyAction {
-  icon: IoniconName;
+  icon: IoniconName | MCIName;
+  iconSet?: 'mci';
   label: string;
   route: string;
 }
@@ -36,7 +38,7 @@ interface BabyAction {
 const BABY_ACTIONS: BabyAction[] = [
   { icon: 'calendar-outline',       label: 'Agendas',     route: '/(tabs)/schedules' },
   { icon: 'trending-up-outline',    label: 'Crescimento', route: '/(tabs)/weight' },
-  { icon: 'cafe-outline',           label: 'Mamadas',     route: '/(tabs)/feedings' },
+  { icon: 'baby-bottle-outline', iconSet: 'mci', label: 'Mamadas', route: '/(tabs)/feedings' },
   { icon: 'today-outline',          label: 'Calendário',  route: '/(tabs)/calendario' },
   { icon: 'home-outline',           label: 'Visitas',     route: '/(tabs)/visits' },
   { icon: 'person-outline',         label: 'Editar bebê', route: '/(tabs)/baby' },
@@ -204,7 +206,7 @@ export default function HomeScreen() {
             <Text style={styles.title}>Lado a Lado</Text>
           </View>
           <TouchableOpacity onPress={() => setShowUserMenu(true)} style={styles.userMenuButton}>
-            <Text style={styles.userMenuText}>⋯</Text>
+            <Ionicons name="ellipsis-horizontal" size={18} color={Colors.textSecondary} />
           </TouchableOpacity>
         </View>
 
@@ -248,7 +250,10 @@ export default function HomeScreen() {
                           onPress={() => router.push(action.route as any)}
                         >
                           <View style={styles.iconBadge}>
-                            <Ionicons name={action.icon} size={28} color={Colors.primary} />
+                            {action.iconSet === 'mci'
+                              ? <MaterialCommunityIcons name={action.icon as MCIName} size={28} color={Colors.primary} />
+                              : <Ionicons name={action.icon as IoniconName} size={28} color={Colors.primary} />
+                            }
                           </View>
                           <Text style={styles.iconTileLabel}>{action.label}</Text>
                         </TouchableOpacity>

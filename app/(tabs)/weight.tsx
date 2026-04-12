@@ -13,6 +13,7 @@ import {
   useWindowDimensions,
   ActivityIndicator,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import Svg, {
   Path, Circle, Line, Text as SvgText,
@@ -489,12 +490,18 @@ export default function GrowthScreen() {
           <TouchableOpacity
             style={[styles.tab, activeTab === 'weight' && styles.tabActiveWeight]}
             onPress={() => setActiveTab('weight')}>
-            <Text style={[styles.tabText, activeTab === 'weight' && styles.tabTextActive]}>⚖️  Peso</Text>
+            <View style={styles.tabContent}>
+              <Ionicons name="barbell-outline" size={15} color={activeTab === 'weight' ? Colors.white : Colors.textSecondary} />
+              <Text style={[styles.tabText, activeTab === 'weight' && styles.tabTextActive]}>Peso</Text>
+            </View>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.tab, activeTab === 'height' && styles.tabActiveHeight]}
             onPress={() => setActiveTab('height')}>
-            <Text style={[styles.tabText, activeTab === 'height' && styles.tabTextActive]}>📏  Altura</Text>
+            <View style={styles.tabContent}>
+              <Ionicons name="resize-outline" size={15} color={activeTab === 'height' ? Colors.white : Colors.textSecondary} />
+              <Text style={[styles.tabText, activeTab === 'height' && styles.tabTextActive]}>Altura</Text>
+            </View>
           </TouchableOpacity>
         </View>
 
@@ -753,7 +760,7 @@ function HistoryList({ entries, onDelete }: { entries: HistoryEntry[]; onDelete:
             </View>
             <TouchableOpacity style={styles.deleteButton} onPress={() => onDelete(e.id)}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Text style={styles.deleteButtonText}>✕</Text>
+              <Ionicons name="close" size={14} color={Colors.error} />
             </TouchableOpacity>
           </View>
         ))
@@ -801,6 +808,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: Colors.glassBorder,
   },
   tab: { flex: 1, paddingVertical: 10, borderRadius: 16, alignItems: 'center' },
+  tabContent: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   tabActiveWeight: { backgroundColor: Colors.primary },
   tabActiveHeight: { backgroundColor: Colors.secondary },
   tabText: { fontSize: 14, fontWeight: '700', color: Colors.textSecondary },
