@@ -168,6 +168,52 @@ Labels uppercase sempre com `letterSpacing: 1` e `textTransform: 'uppercase'`.
 { paddingVertical: 15, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: Colors.neutral }
 ```
 
+## Estrutura Padrão de Tela (sub-telas com botão voltar)
+
+Toda tela que não é a Home deve seguir este padrão de header:
+
+```tsx
+<View style={styles.header}>
+  <TouchableOpacity
+    onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)')}
+    style={styles.backButton}
+  >
+    <Text style={styles.backButtonText}>←</Text>
+  </TouchableOpacity>
+  <Text style={styles.title}>Título da Tela</Text>
+  <View style={styles.headerSpacer} />  {/* ou botão de ação à direita */}
+</View>
+```
+
+Estilos obrigatórios do header:
+```ts
+header: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  paddingHorizontal: 18,
+  paddingTop: 60,   // IMPORTANTE: nunca menos que 60 (safe area do iOS)
+  paddingBottom: 16,
+},
+backButton: {
+  width: 40,
+  height: 40,
+  borderRadius: 20,
+  backgroundColor: Colors.glass,
+  borderWidth: 1,
+  borderColor: Colors.glassBorder,
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+backButtonText: { fontSize: 20, color: Colors.text, fontWeight: '600' },
+title: { fontSize: 22, fontWeight: '800', color: Colors.text, letterSpacing: -0.3 },
+headerSpacer: { width: 40 },
+```
+
+**Regra:** `paddingTop` do header nunca deve ser inferior a `60` em sub-telas. O botão voltar deve usar `router.canGoBack() ? router.back() : router.replace('/(tabs)')` para funcionar na web sem histórico.
+
+---
+
 ### Componentes Compartilhados
 
 | Componente | Arquivo | Descrição |
