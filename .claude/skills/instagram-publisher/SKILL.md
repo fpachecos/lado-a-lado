@@ -60,13 +60,16 @@ Defaults do Lado a Lado (usar se config não existir):
 
 Determinar `YYYY-MM` a partir do mês informado (ex: "abril 2026" → `2026-04`).
 
-Ler o plano:
+**Sempre usar o plano mais recente.** Detectar automaticamente qual arquivo usar:
+
 ```bash
-cat ~/instagram-planner/<YYYY-MM>/plano.md
+ls ~/instagram-planner/<YYYY-MM>/plano*.md 2>/dev/null | sort -V | tail -1
 ```
 
-Se o arquivo não existir:
-> "Plano não encontrado em ~/instagram-planner/<YYYY-MM>/plano.md. Execute primeiro: `/instagram-planner <mês>`"
+Exemplos de precedência (da mais para menos recente): `plano_v3.md` > `plano_v2.md` > `plano.md`
+
+Ler o plano mais recente encontrado. Se nenhum existir:
+> "Plano não encontrado em ~/instagram-planner/<YYYY-MM>/. Execute primeiro: `/instagram-planner <mês>`"
 
 Parsear os posts do plano (extrair: número, data, horário, formato, legenda, descrição da imagem, slides se carrossel).
 
@@ -79,76 +82,26 @@ Criar diretório de output:
 mkdir -p ~/instagram-planner/<YYYY-MM>/images
 ```
 
-Para **cada post** a ser processado, usar o script Python abaixo. O prompt deve ser em **inglês** — traduzir a `descricao_imagem` do plano antes de enviar.
+Para **cada post** a ser processado, usar o script permanente da skill. O prompt deve ser em **inglês** — traduzir a `descricao_imagem` do plano antes de enviar.
 
 #### Script de geração
 
-Salvar como `/tmp/hf_gen.py`:
-
-```python
-#!/usr/bin/env python3
-import os, sys, urllib.request, urllib.error, time, json
-
-HF_TOKEN = os.environ["HF_TOKEN"]
-PROMPT   = sys.argv[1]
-OUTPUT   = sys.argv[2]
-
-# Modelos em ordem de preferência (gratuitos no free tier)
-MODELS = [
-    "black-forest-labs/FLUX.1-schnell",
-    "stabilityai/stable-diffusion-xl-base-1.0",
-    "runwayml/stable-diffusion-v1-5",
-]
-
-headers = {
-    "Authorization": f"Bearer {HF_TOKEN}",
-    "Content-Type": "application/json",
-    "x-wait-for-model": "true",
-}
-
-payload = json.dumps({"inputs": PROMPT}).encode()
-
-for model in MODELS:
-    url = f"https://api-inference.huggingface.co/models/{model}"
-    req = urllib.request.Request(url, data=payload, headers=headers)
-    for attempt in range(3):
-        try:
-            resp = urllib.request.urlopen(req, timeout=120)
-            img_bytes = resp.read()
-            if img_bytes[:4] in (b'\x89PNG', b'\xff\xd8\xff', b'RIFF'):
-                with open(OUTPUT, "wb") as f:
-                    f.write(img_bytes)
-                print(f"OK: {OUTPUT} (modelo: {model})")
-                sys.exit(0)
-            else:
-                err = json.loads(img_bytes)
-                if "estimated_time" in err:
-                    wait = int(err["estimated_time"]) + 2
-                    print(f"Modelo carregando, aguardando {wait}s...", file=sys.stderr)
-                    time.sleep(wait)
-                    continue
-                print(f"Modelo {model} erro: {err}", file=sys.stderr)
-                break
-        except urllib.error.HTTPError as e:
-            body = e.read().decode()
-            print(f"Modelo {model} HTTP {e.code}: {body[:200]}", file=sys.stderr)
-            if e.code == 503:
-                time.sleep(20)
-                continue
-            break
-        except Exception as e:
-            print(f"Modelo {model} falhou: {e}", file=sys.stderr)
-            break
-
-print("ERRO: nenhum modelo gerou imagem", file=sys.stderr)
-sys.exit(1)
-```
+Localizado em: `.claude/skills/instagram-publisher/scripts/gemini_gen.py`
 
 #### Executar para cada imagem
 
 ```bash
 source ~/.zshrc
-python3 /tmp/hf_gen.py \
+SKILL_DIR="$(cd "$(dirname "$0")/.." && pwd)"  # raiz do repo
+python3 "$SKILL_DIR/.claude/skills/instagram-publisher/scripts/gemini_gen.py" \
+  "<prompt_em_ingles>" \
+  ~/instagram-planner/<YYYY-MM>/images/post-<N>-img-<slide>.png
+```
+
+Ou com caminho absoluto direto:
+```bash
+source ~/.zshrc
+python3 /Users/fipacheco/lado-a-lado/.claude/skills/instagram-publisher/scripts/gemini_gen.py \
   "<prompt_em_ingles>" \
   ~/instagram-planner/<YYYY-MM>/images/post-<N>-img-<slide>.png
 ```
@@ -158,112 +111,77 @@ Para **carrossel**: gerar uma imagem por slide, traduzindo a descrição de cada
 #### Dicas de prompt
 
 - Traduzir para inglês e condensar em ~60 palavras
-- Estrutura: `[subject], [style], [lighting], [mood], photorealistic, high quality, no text, no watermark`
-- Para slides textuais de carrossel: pedir fundo temático liso/desfocado para receber texto sobreposto
+- **Sempre gerar sem texto:** toda imagem deve ter `no text, no lettering, no watermark` no final do prompt
+- Para slides de carrossel: incluir `leave empty space at top (~30% height) for text overlay` quando o OVERLAY for `posição: top`
+- Para imagens únicas: sem modificações de espaço
+- Máximo de 4 slides por carrossel
 
-### 3. Hospedar imagens no catbox.moe (anônimo, sem cadastro)
+### 2b. Sobrepor texto nas imagens de carrossel (Pillow)
 
-Para cada imagem gerada:
+Para cada slide que tiver um campo `OVERLAY` no plano, após gerar a imagem base, executar o script permanente da skill:
+
+Script: `.claude/skills/instagram-publisher/scripts/text_overlay.py`
 
 ```bash
-IMG_PATH=~/instagram-planner/<YYYY-MM>/images/post-<N>-img-<slide>.png
+python3 /Users/fipacheco/lado-a-lado/.claude/skills/instagram-publisher/scripts/text_overlay.py \
+  ~/instagram-planner/<YYYY-MM>/images/post-<N>-img-<slide>.jpg \
+  ~/instagram-planner/<YYYY-MM>/images/post-<N>-img-<slide>-final.jpg \
+  "<texto do overlay>" \
+  "<top|bottom|center>" \
+  "<#cor_fundo>" \
+  "<#cor_texto>"
+```
 
-IMG_URL=$(curl -s -F "reqtype=fileupload" \
+Usar sempre o arquivo `-final.jpg` para o upload (não o original sem texto).
+
+### 3. Hospedar imagens no litterbox.catbox.moe (anônimo, sem cadastro)
+
+Para cada imagem gerada (usar sempre o `-final.jpg` quando houver overlay):
+
+```bash
+IMG_PATH=~/instagram-planner/<YYYY-MM>/images/post-<N>-img-<slide>-final.jpg
+
+IMG_URL=$(curl -s -F "reqtype=fileupload" -F "time=72h" \
   -F "fileToUpload=@$IMG_PATH" \
-  https://catbox.moe/user.php)
+  https://litterbox.catbox.moe/resources/internals/api.php)
 
 echo "URL: $IMG_URL"
 ```
 
-`catbox.moe` retorna diretamente a URL pública (ex: `https://files.catbox.moe/abc123.png`). Guardar para o passo seguinte.
+`litterbox` retorna diretamente a URL pública (ex: `https://litter.catbox.moe/abc123.jpg`). Guardar para o passo seguinte.
 
-Se o upload falhar (timeout ou erro), tentar novamente — o serviço é gratuito e pode ter instabilidade ocasional.
+**Nota:** usar `litterbox.catbox.moe` (com `time=72h`), não `catbox.moe/user.php` — o segundo retorna 404 sem autenticação.
+
+Se o upload falhar, tentar novamente — o serviço é gratuito e pode ter instabilidade ocasional.
 
 Se `--dry-run`: parar aqui. Exibir lista de imagens geradas + URLs e não publicar.
 
 ### 4. Publicar via Meta Graph API
 
-Carregar variáveis:
+Script permanente: `.claude/skills/instagram-publisher/scripts/publish_instagram.py`
+
 ```bash
 source ~/.zshrc
-IG_USER_ID="17841434375697785"  # ou do config
+
+# Imagem única
+python3 /Users/fipacheco/lado-a-lado/.claude/skills/instagram-publisher/scripts/publish_instagram.py \
+  --tipo imagem \
+  --imagens "https://url-da-imagem.jpg" \
+  --legenda "Legenda do post com #hashtags"
+
+# Carrossel (2–4 imagens)
+python3 /Users/fipacheco/lado-a-lado/.claude/skills/instagram-publisher/scripts/publish_instagram.py \
+  --tipo carrossel \
+  --imagens "https://url1.jpg" "https://url2.jpg" "https://url3.jpg" "https://url4.jpg" \
+  --legenda "Legenda do post"
+
+# Dry-run (cria containers mas não publica)
+python3 ... --dry-run
 ```
 
-#### 4a. Imagem única
+O script imprime o Instagram media ID ao final e lida com toda a lógica de polling de status (`FINISHED`/`ERROR`).
 
-```bash
-# 1. Criar container
-CONTAINER_ID=$(curl -s -X POST \
-  "https://graph.facebook.com/v19.0/$IG_USER_ID/media" \
-  -d "image_url=<URL_PUBLICA>" \
-  -d "caption=<LEGENDA_URL_ENCODED>" \
-  -d "access_token=$META_ACCESS_TOKEN" \
-  | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])")
-
-echo "Container: $CONTAINER_ID"
-
-# 2. Verificar status (aguardar FINISHED)
-for i in $(seq 1 10); do
-  STATUS=$(curl -s "https://graph.facebook.com/v19.0/$CONTAINER_ID?fields=status_code&access_token=$META_ACCESS_TOKEN" \
-    | python3 -c "import sys,json; print(json.load(sys.stdin).get('status_code',''))")
-  echo "Status: $STATUS"
-  [ "$STATUS" = "FINISHED" ] && break
-  sleep 3
-done
-
-# 3. Publicar
-curl -s -X POST \
-  "https://graph.facebook.com/v19.0/$IG_USER_ID/media_publish" \
-  -d "creation_id=$CONTAINER_ID" \
-  -d "access_token=$META_ACCESS_TOKEN" \
-  | python3 -c "import sys,json; d=json.load(sys.stdin); print('Publicado! ID:', d.get('id','ERRO'), d)"
-```
-
-#### 4b. Carrossel
-
-```bash
-# 1. Criar containers filhos (um por imagem)
-CHILD_IDS=()
-for URL in <url1> <url2> ...; do
-  CHILD_ID=$(curl -s -X POST \
-    "https://graph.facebook.com/v19.0/$IG_USER_ID/media" \
-    -d "image_url=$URL" \
-    -d "is_carousel_item=true" \
-    -d "access_token=$META_ACCESS_TOKEN" \
-    | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])")
-  CHILD_IDS+=("$CHILD_ID")
-  sleep 2
-done
-
-# Aguardar todos FINISHED
-for CID in "${CHILD_IDS[@]}"; do
-  for i in $(seq 1 10); do
-    STATUS=$(curl -s "https://graph.facebook.com/v19.0/$CID?fields=status_code&access_token=$META_ACCESS_TOKEN" \
-      | python3 -c "import sys,json; print(json.load(sys.stdin).get('status_code',''))")
-    [ "$STATUS" = "FINISHED" ] && break
-    sleep 3
-  done
-done
-
-# 2. Criar container do carrossel
-CHILDREN_PARAM=$(IFS=,; echo "${CHILD_IDS[*]}")
-CAROUSEL_ID=$(curl -s -X POST \
-  "https://graph.facebook.com/v19.0/$IG_USER_ID/media" \
-  -d "media_type=CAROUSEL" \
-  -d "children=$CHILDREN_PARAM" \
-  -d "caption=<LEGENDA_URL_ENCODED>" \
-  -d "access_token=$META_ACCESS_TOKEN" \
-  | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])")
-
-# 3. Publicar
-curl -s -X POST \
-  "https://graph.facebook.com/v19.0/$IG_USER_ID/media_publish" \
-  -d "creation_id=$CAROUSEL_ID" \
-  -d "access_token=$META_ACCESS_TOKEN" \
-  | python3 -c "import sys,json; d=json.load(sys.stdin); print('Carrossel publicado! ID:', d.get('id','ERRO'), d)"
-```
-
-#### 4c. Agendamento (`--agendar`)
+#### 4b. Agendamento (`--agendar`)
 
 A API do Instagram suporta agendamento via `published=false` + `scheduled_publish_time` (Unix timestamp). Requer conta Creator ou Business com permissão `instagram_content_publish`.
 
