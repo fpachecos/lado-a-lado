@@ -1,6 +1,6 @@
 ---
 name: instagram-planner
-version: 1.0.0
+version: 1.1.0
 description: "Gera plano mensal de publicações para Instagram com análise de performance via Meta Graph API. Output: arquivo MD com datas, conteúdo e descrição detalhada de imagens."
 ---
 
@@ -217,6 +217,7 @@ Com base no contexto da conta + análise de performance (ou perfil do nicho se s
       "tipo": "educativo|emocional|produto|dica|engajamento|bastidores|prova_social",
       "formato": "imagem_unica|carrossel",
       "tema": "...",
+      "acao_alvo": "save|dm_share|comment|reach",
       "legenda": "texto completo da legenda em PT-BR (incluindo CTA e hashtags ao final)",
       "slides": ["texto do slide 1", "texto do slide 2"],
       "descricao_imagem": "Descrição detalhada e visual da imagem ou de cada slide do carrossel. Incluir: composição, cores dominantes, elementos visuais, estilo fotográfico ou ilustrativo, mood, o que aparece em primeiro e segundo plano. Suficientemente detalhado para um designer ou IA de imagem executar."
@@ -228,7 +229,30 @@ Com base no contexto da conta + análise de performance (ou perfil do nicho se s
 Gerar 12–16 posts distribuídos ao longo do mês (3–4 por semana).
 Usar apenas `imagem_unica` e `carrossel` — sem reels, sem stories.
 Priorizar formatos que tiveram melhor performance no histórico.
-Se sem histórico: equilibrar 50% imagem única / 50% carrossel.
+Se sem histórico: equilibrar 40% imagem única / 60% carrossel (carrosséis convertem 114% mais que imagens únicas).
+
+#### Distribuição de pilares (baseada em benchmarks de nicho apps)
+- **40% Educativo/Utilidade** — dicas, guias, listas. Prioridade para saves (evergreen).
+- **30% Emocional/Comunidade** — identificação, histórias, engajamento. Prioridade para compartilhamentos via DM.
+- **20% Produto/Funcionalidade** — mostrar o app como solução de problema, não como venda.
+- **10% Bastidores/Prova Social** — humanizar a marca, depoimentos, curiosidades.
+
+#### Hierarquia de engajamento que o algoritmo prioriza (2025)
+1. **Compartilhamentos via DM** (sinal mais forte)
+2. **Salvamentos** (conteúdo evergreen, vale revisitar)
+3. **Compartilhamentos públicos**
+4. **Comentários**
+5. **Curtidas** (sinal mais fraco)
+
+Cada post deve ser pensado com o objetivo de maximizar 1 ou 2 dessas ações. Adicionar no JSON interno qual ação-alvo o post busca (`acao_alvo: "save"|"dm_share"|"comment"|"reach"`).
+
+#### Horários recomendados por dia
+- Segunda: 19h–21h
+- Quarta: 12h ou 18h (melhores do dia)
+- Quinta: 9h ou 19h (dia com mais engajamento geral)
+- Sexta: 18h
+- Sábado: 10h ou 17h
+- Domingo: 12h–15h
 
 ### 5. Salvar arquivo MD de output
 
@@ -261,19 +285,22 @@ Gerar arquivo `~/instagram-planner/<YYYY-MM>/plano.md` com a seguinte estrutura:
 ## Posts do Mês
 
 ### Post 1 — DD/MM (dia da semana) às HH:00
-**Formato:** imagem única / carrossel (N slides) / reels
-**Tipo:** educativo / emocional / etc.
+**Formato:** imagem única / carrossel (N slides)
+**Tipo:** educativo / emocional / produto / dica / engajamento / bastidores / prova_social
 **Tema:** ...
+**Ação-alvo:** save / dm_share / comment / reach
 
 **Legenda:**
-> (legenda completa com hashtags)
+> (legenda completa com hashtags — seguir anatomia: Hook → Corpo → CTA específico → 5–8 hashtags)
 
 **Descrição da imagem:**
 > (descrição detalhada para designer/IA: composição, cores, elementos, estilo, mood)
 
-**Slides (se carrossel):**
-- Slide 1: ...
+**Slides (se carrossel — alvo 8–10 slides):**
+- Slide 1 (capa): ...
 - Slide 2: ...
+- ...
+- Último slide (CTA): ...
 
 ---
 
@@ -323,6 +350,47 @@ Ou adicionar "meta_access_token" no arquivo:
 
 - Nunca postar automaticamente — arquivo MD fica em `~/instagram-planner/<YYYY-MM>/plano.md` para revisão manual
 - Legendas em português brasileiro
-- Hashtags ao final (10–20 tags relevantes ao nicho)
+- **Hashtags: 5–8 tags específicas de nicho** (pesquisas 2025 mostram que 3–8 niche hashtags superam 20 genéricas em alcance orgânico). Evitar hashtags genéricas como `#maternidade` sozinha — combiná-las com tags específicas como `#maternidadereal` e `#organizaçãodevisitas`)
 - Descrições de imagem devem ser detalhadas o suficiente para um designer ou ferramenta de IA (Midjourney, DALL-E, ComfyUI) executar sem dúvidas
 - Se conta nova (sem histórico): mencionar isso no plano e focar em diversidade de formatos para teste A/B natural
+
+### Anatomia obrigatória da legenda
+
+Toda legenda deve seguir esta estrutura:
+
+```
+[HOOK — 1 frase forte antes do "mais". Deve parar o scroll. Ex: pergunta, dado surpreendente, afirmação ousada]
+
+[CORPO — desenvolvimento em parágrafos curtos, separados por linha em branco. Usar emojis estrategicamente para quebrar texto e destacar pontos — 3 a 5 por legenda, no máximo.]
+
+[CTA específico — nunca genérico. Em vez de "comenta aqui", usar "comenta o número da situação que mais te representa" ou "manda esse post pra quem precisa ver isso". CTA deve mapear para a acao_alvo do post.]
+
+#hashtag1 #hashtag2 #hashtag3 #hashtag4 #hashtag5
+```
+
+### Carrossel: boas práticas
+
+- **Máximo 4 slides por carrossel** — limite de custo de geração de imagens
+- **Slide 1 (capa)**: deve funcionar como thumbnail autônomo — frase forte, visual impactante
+- **Slide 2**: entregar o primeiro valor imediatamente — não desperdiçar com introdução
+- **Último slide**: sempre com CTA claro, alinhado à `acao_alvo`
+- Cada slide: 1 ideia, 1 visual, texto mínimo legível
+
+### Texto nas imagens — OBRIGATÓRIO para carrosséis
+
+As imagens são geradas **sem texto** (para evitar erros de tipografia da IA). O texto é sobreposto via código (Pillow) depois da geração.
+
+Toda `descricao_imagem` de carrossel deve ter dois campos separados por slide:
+
+```
+Slide N — VISUAL: [descrição do fundo/ilustração apenas, sem mencionar texto]
+Slide N — OVERLAY: "[texto exato a sobrepor]" | posição: top | cor_fundo: #HEXHEX | cor_texto: #HEXHEX
+```
+
+- `posição`: `top` (banda no topo, boa para slides com ilustração centralizada), `bottom` (banda embaixo, boa para fotos), `center` (texto centralizado sem banda, para slides de fundo sólido)
+- `cor_fundo`: cor da banda de texto (pode ser hex com alpha implícito 80%) — usar a cor de destaque do slide
+- `cor_texto`: `#FFFFFF` (branco) na maioria dos casos
+
+Exemplo correto:
+> Slide 1 — VISUAL: fundo creme (#FAF7F0), ilustração flat de mãe segurando bebê com ícones de WhatsApp e calendário ao redor, espaço livre no topo (~30% da altura).
+> Slide 1 — OVERLAY: "Situações que toda mãe de primeira viagem já viveu" | posição: top | cor_fundo: #5B9BD5 | cor_texto: #FFFFFF
