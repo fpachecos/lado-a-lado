@@ -7,6 +7,25 @@
 > - `database/CLAUDE.md` — Banco de dados, migrations
 > - `app/CLAUDE.md` — App mobile, design system mobile
 
+## Build iOS local — Provisioning Profile
+
+Antes de arquivar, verificar se o UUID `8a29fc14-d295-4dcc-9709-d8e18ab6094a` está instalado. Se o build falhar com "Provisioning profile doesn't include the Push Notifications capability", o profile correto está em `~/Downloads/`, não em `~/Library/MobileDevice/Provisioning Profiles/`:
+
+```bash
+cp ~/Downloads/"[expo]_comladoaladoapp_AppStore_20260121T165956793Z (1).mobileprovision" \
+  ~/Library/MobileDevice/Provisioning\ Profiles/
+```
+
+Não remover `aps-environment` do entitlements como workaround — usar o profile correto.
+
+---
+
+## Geração de imagens — Escopo restrito
+
+Nunca usar geração de imagens (Gemini, Pollinations, HF ou qualquer outra IA) para criar assets do app (icon, splash, favicon, ilustrações, etc.) sem confirmação explícita do usuário. Geração de imagem é exclusiva para posts do Instagram (`/instagram-publisher`, `/instagram-planner`). Para qualquer outro uso, perguntar antes.
+
+---
+
 ## Migrations — Regras obrigatórias
 
 Sempre que criar um arquivo `database/migration_*.sql`:
