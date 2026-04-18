@@ -82,29 +82,54 @@ Criar diretório de output:
 mkdir -p ~/instagram-planner/<YYYY-MM>/images
 ```
 
-Para **cada post** a ser processado, usar o script permanente da skill. O prompt deve ser em **inglês** — traduzir a `descricao_imagem` do plano antes de enviar.
+#### 2a. Detectar se o post precisa de screenshot do app
 
-#### Script de geração
+Antes de gerar qualquer imagem, analisar a `descricao_imagem` do post. Se ela contiver qualquer menção a print, screenshot ou tela do app (ex: "print do app", "screenshot do app", "mock-up de smartphone com tela do app", "tela do Lado a Lado", "app aberto", etc.):
 
-Localizado em: `.claude/skills/instagram-publisher/scripts/gemini_gen.py`
+1. **Pedir credenciais** ao usuário (e-mail e senha do app) se ainda não foram fornecidas nesta sessão.
 
-#### Executar para cada imagem
+2. **Rodar a skill app-screenshots** para capturar a tela relevante — passar o argumento `--screen` com a rota mais adequada ao contexto do post. Exemplos:
+   - Post mostrando lista de agendas → `--screen schedules`
+   - Post mostrando home → `--screen /` (sem filtro adicional)
+   - Post mostrando nova agenda → `--screen schedules/new`
 
-```bash
-source ~/.zshrc
-SKILL_DIR="$(cd "$(dirname "$0")/.." && pwd)"  # raiz do repo
-python3 "$SKILL_DIR/.claude/skills/instagram-publisher/scripts/gemini_gen.py" \
-  "<prompt_em_ingles>" \
-  ~/instagram-planner/<YYYY-MM>/images/post-<N>-img-<slide>.png
-```
+   ```bash
+   # Verificar servidor Expo
+   curl -s http://localhost:8081 -o /dev/null -w "%{http_code}"
+   # Se não retornar 200, subir:
+   cd /Users/fipacheco/lado-a-lado && npx expo start --web --port 8081 &
+   # Aguardar e rodar:
+   SCREENSHOT_EMAIL="<email>" SCREENSHOT_PASSWORD="<senha>" \
+     node /Users/fipacheco/lado-a-lado/take-screenshots.mjs --screen <rota>
+   ```
 
-Ou com caminho absoluto direto:
+3. Identificar o arquivo gerado em `screenshots/iphone65_*_<rota>.png` e usá-lo como imagem de entrada no passo de geração (ver abaixo).
+
+#### 2b. Escolher o script de geração correto
+
+| Situação | Script a usar |
+|---|---|
+| Imagem **com** screenshot/tela do app | `gemini_gen_with_image.py` (prompt + imagem de entrada) |
+| Imagem **sem** referência ao app | `gemini_gen.py` (apenas prompt) |
+
+**Script sem imagem de entrada** (caso padrão):
 ```bash
 source ~/.zshrc
 python3 /Users/fipacheco/lado-a-lado/.claude/skills/instagram-publisher/scripts/gemini_gen.py \
   "<prompt_em_ingles>" \
   ~/instagram-planner/<YYYY-MM>/images/post-<N>-img-<slide>.png
 ```
+
+**Script com imagem de entrada** (quando o post pede screenshot do app):
+```bash
+source ~/.zshrc
+python3 /Users/fipacheco/lado-a-lado/.claude/skills/instagram-publisher/scripts/gemini_gen_with_image.py \
+  "<prompt_em_ingles>" \
+  /Users/fipacheco/lado-a-lado/screenshots/iphone65_<arquivo>.png \
+  ~/instagram-planner/<YYYY-MM>/images/post-<N>-img-<slide>.png
+```
+
+O prompt deve descrever a cena ao redor do telefone (superfície, iluminação, objetos) e instruir o modelo a preservar a tela do app exatamente como está.
 
 Para **carrossel**: gerar uma imagem por slide, traduzindo a descrição de cada slide.
 
@@ -116,7 +141,7 @@ Para **carrossel**: gerar uma imagem por slide, traduzindo a descrição de cada
 - Para imagens únicas: sem modificações de espaço
 - Máximo de 4 slides por carrossel
 
-### 2b. Sobrepor texto nas imagens de carrossel (Pillow)
+### 2c. Sobrepor texto nas imagens de carrossel (Pillow)
 
 Para cada slide que tiver um campo `OVERLAY` no plano, após gerar a imagem base, executar o script permanente da skill:
 
