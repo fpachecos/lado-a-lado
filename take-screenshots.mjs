@@ -22,6 +22,10 @@ const DEVICES = {
 const EMAIL    = process.env.SCREENSHOT_EMAIL    || '';
 const PASSWORD = process.env.SCREENSHOT_PASSWORD || '';
 
+// Optional --screen filter: node take-screenshots.mjs --screen schedules
+const screenArgIdx = process.argv.indexOf('--screen');
+const SCREEN_FILTER = screenArgIdx !== -1 ? process.argv[screenArgIdx + 1] : null;
+
 // Load .env manually for SUPABASE vars (expo only loads them at build time)
 function loadEnv() {
   const envPath = path.join(__dirname, '.env');
@@ -193,8 +197,21 @@ async function main() {
   fs.mkdirSync(OUT_DIR, { recursive: true });
 
   console.log('Descobrindo telas...');
-  const screens = await buildScreenList();
-  console.log(`${screens.length} telas encontradas:\n` + screens.map(s => `  ${s.path}`).join('\n'));
+  let screens = await buildScreenList();
+
+  if (SCREEN_FILTER) {
+    const filter = SCREEN_FILTER.startsWith('/') ? SCREEN_FILTER : '/' + SCREEN_FILTER;
+    screens = screens.filter(s => s.path.startsWith(filter));
+    if (screens.length === 0) {
+      console.error(`Nenhuma tela encontrada para o filtro "${SCREEN_FILTER}". Telas disponíveis:\n` +
+        (await buildScreenList()).map(s => `  ${s.path}`).join('\n'));
+      process.exit(1);
+    }
+    console.log(`Filtro ativo: "${SCREEN_FILTER}" — ${screens.length} tela(s) encontrada(s):`);
+  } else {
+    console.log(`${screens.length} telas encontradas:`);
+  }
+  console.log(screens.map(s => `  ${s.path}`).join('\n'));
 
   const browser = await chromium.launch({ headless: true });
 

@@ -1,12 +1,22 @@
 ---
 name: app-screenshots
-version: 2.0.0
-description: "Tira screenshots do app Lado a Lado nos tamanhos da App Store Connect (iPhone 6.5\" e iPad 13\"). Descobre todas as telas automaticamente — basta rodar quando o app crescer."
+version: 2.1.0
+description: "Tira screenshots do app Lado a Lado nos tamanhos da App Store Connect (iPhone 6.5\" e iPad 13\"). Por padrão captura todas as telas; aceita --screen <rota> para capturar uma tela específica."
 ---
 
 # app-screenshots
 
-Captura screenshots de **todas as telas** do app, prontos para submissão no App Store Connect. As telas são descobertas dinamicamente escaneando `app/(tabs)/` — nenhuma lista hardcoded.
+Captura screenshots do app, prontos para submissão no App Store Connect. As telas são descobertas dinamicamente escaneando `app/(tabs)/` — nenhuma lista hardcoded.
+
+## Uso
+
+```
+/app-screenshots                        → todas as telas (App Store Connect)
+/app-screenshots --screen schedules     → apenas a tela /schedules
+/app-screenshots --screen /schedules/new → apenas a tela de nova agenda
+```
+
+O argumento `--screen` aceita prefixo de rota (com ou sem `/`). Quando especificado, captura apenas as telas cujo path começa com o valor informado.
 
 ## Tamanhos gerados
 
@@ -36,7 +46,11 @@ Quando o usuário invocar `/app-screenshots`:
    cd /Users/fipacheco/lado-a-lado && \
    SCREENSHOT_EMAIL="<email>" \
    SCREENSHOT_PASSWORD="<senha>" \
-   node take-screenshots.mjs
+   node take-screenshots.mjs [--screen <rota>]
+   ```
+   Se `--screen` foi fornecido nos argumentos da skill, incluí-lo no comando. Exemplo:
+   ```bash
+   node take-screenshots.mjs --screen schedules
    ```
    Monitorar o output com Monitor tool e reportar progresso em tempo real.
 
