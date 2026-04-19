@@ -103,7 +103,14 @@ Antes de gerar qualquer imagem, analisar a `descricao_imagem` do post. Se ela co
      node /Users/fipacheco/lado-a-lado/take-screenshots.mjs --screen <rota>
    ```
 
-3. Identificar o arquivo gerado em `screenshots/iphone65_*_<rota>.png` e usá-lo como imagem de entrada no passo de geração (ver abaixo).
+3. Identificar o arquivo gerado em `screenshots/iphone65_*_<rota>.png`.
+
+4. **Validar se o screenshot tem dados antes de chamar o Gemini.** Abrir a imagem e analisá-la visualmente:
+   - Se a tela estiver **vazia** (sem registros, listas vazias, estados de empty state) → **parar e avisar o usuário** antes de gerar qualquer imagem no Gemini. Pedir que cadastre dados e confirme para continuar.
+   - Se a tela tiver **dados reais** → prosseguir normalmente para o passo 2b.
+
+   Exemplo de aviso:
+   > "O screenshot da tela `/feedings` está vazio — sem mamadas registradas. Cadastre alguns dados no app com o usuário `fpachecosouza@icloud.com` e me avise para retomar a geração. Isso evita gastar chamadas Gemini com imagens inúteis."
 
 #### 2b. Escolher o script de geração correto
 
