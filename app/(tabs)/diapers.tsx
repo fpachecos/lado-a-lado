@@ -10,11 +10,9 @@ import {
   Platform,
   KeyboardAvoidingView,
   ActivityIndicator,
-  Image,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
-import * as ImagePicker from 'expo-image-picker';
 import { format, subDays, startOfDay, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/lib/supabase';
@@ -30,7 +28,6 @@ import {
   DiaperType,
   getPoopColor,
   isNormalPoop,
-  detectPoopColorFromImage,
 } from '@/lib/diaper-colors';
 
 const DAYS_PER_PAGE = 3;
@@ -75,9 +72,6 @@ export default function DiapersScreen() {
   const [diaperType, setDiaperType] = useState<DiaperType>('pee');
   const [poopColor, setPoopColor] = useState<PoopColorId | null>(null);
 
-  const [photoUri, setPhotoUri] = useState<string | null>(null);
-  const [analyzingPhoto, setAnalyzingPhoto] = useState(false);
-  const [photoDetected, setPhotoDetected] = useState(false);
 
   const checkHasMore = useCallback(async (id: string, beforeDate: Date) => {
     const { count } = await supabase
@@ -154,8 +148,6 @@ export default function DiapersScreen() {
     setRecordedDateTime(new Date());
     setDiaperType('pee');
     setPoopColor(null);
-    setPhotoUri(null);
-    setPhotoDetected(false);
     setShowModal(true);
   };
 
@@ -164,8 +156,6 @@ export default function DiapersScreen() {
     setRecordedDateTime(new Date(diaper.recorded_at));
     setDiaperType(diaper.type);
     setPoopColor(diaper.poop_color as PoopColorId | null);
-    setPhotoUri(null);
-    setPhotoDetected(false);
     setShowModal(true);
   };
 
@@ -190,41 +180,6 @@ export default function DiapersScreen() {
     setRecordedDateTime(updated);
   };
 
-  const handlePickPhoto = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      if (Platform.OS === 'web') {
-        window.alert('Permissão para acessar a galeria é necessária.');
-      } else {
-        Alert.alert('Permissão necessária', 'Permissão para acessar a galeria é necessária.');
-      }
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.3,
-      base64: true,
-    });
-
-    if (!result.canceled && result.assets[0]) {
-      const asset = result.assets[0];
-      setPhotoUri(asset.uri);
-      setAnalyzingPhoto(true);
-      setPhotoDetected(false);
-      try {
-        const detected = await detectPoopColorFromImage(asset.uri, asset.base64 ?? null);
-        if (detected) {
-          setPoopColor(detected);
-          setPhotoDetected(true);
-        }
-      } finally {
-        setAnalyzingPhoto(false);
-      }
-    }
-  };
 
   const handleSave = async () => {
     if (!baby) return;
@@ -517,33 +472,6 @@ export default function DiapersScreen() {
                       ))}
                     </View>
 
-                    {/* Botão foto */}
-                    <View style={styles.photoRow}>
-                      <TouchableOpacity
-                        style={styles.photoButton}
-                        onPress={handlePickPhoto}
-                        disabled={analyzingPhoto}
-                        activeOpacity={0.75}
-                      >
-                        {analyzingPhoto
-                          ? <ActivityIndicator color={Colors.primary} size="small" />
-                          : <Text style={styles.photoButtonText}>
-                              {photoUri ? '🔄 Analisar outra foto' : '📷 Detectar cor por foto'}
-                            </Text>
-                        }
-                      </TouchableOpacity>
-                    </View>
-
-                    {photoUri && !analyzingPhoto && (
-                      <View style={styles.photoPreviewRow}>
-                        <Image source={{ uri: photoUri }} style={styles.photoPreview} />
-                        <Text style={styles.photoHint}>
-                          {photoDetected
-                            ? 'Cor detectada automaticamente. Você pode alterar acima.'
-                            : 'Não foi possível detectar a cor. Selecione manualmente acima.'}
-                        </Text>
-                      </View>
-                    )}
                   </>
                 )}
 
@@ -794,18 +722,6 @@ const styles = StyleSheet.create({
     textAlign: 'center', lineHeight: 13,
   },
 
-  // Photo
-  photoRow: { marginTop: 12 },
-  photoButton: {
-    alignItems: 'center', justifyContent: 'center',
-    paddingVertical: 11, borderRadius: 14,
-    borderWidth: 1, borderColor: Colors.borderPrimary,
-    backgroundColor: Colors.cardPrimary,
-  },
-  photoButtonText: { fontSize: 13, fontWeight: '600', color: Colors.primary },
-  photoPreviewRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 10 },
-  photoPreview: { width: 56, height: 56, borderRadius: 12, borderWidth: 1, borderColor: Colors.glassBorder },
-  photoHint: { flex: 1, fontSize: 12, color: Colors.textSecondary, lineHeight: 17 },
 
   // Modal actions
   modalActions: { flexDirection: 'row', gap: 12, marginTop: 16 },
