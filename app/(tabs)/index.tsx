@@ -39,6 +39,7 @@ const BABY_ACTIONS: BabyAction[] = [
   { icon: 'home-outline',           label: 'Agenda de Visitas', route: '/(tabs)/schedules' },
   { icon: 'trending-up-outline',    label: 'Crescimento',       route: '/(tabs)/weight' },
   { icon: 'baby-bottle-outline', iconSet: 'mci', label: 'Mamadas', route: '/(tabs)/feedings' },
+  { icon: 'diaper-outline', iconSet: 'mci', label: 'Fraldas', route: '/(tabs)/diapers' },
   { icon: 'today-outline',          label: 'Calendário',        route: '/(tabs)/calendario' },
   { icon: 'person-outline',         label: 'Editar bebê',       route: '/(tabs)/baby' },
 ];

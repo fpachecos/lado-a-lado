@@ -1,6 +1,6 @@
 ---
 name: local-build
-version: 2.1.0
+version: 2.2.0
 description: "Build local do Lado a Lado para iOS usando xcodebuild + envio automático para a Apple via altool. Submissão para revisão requer pedido explícito."
 ---
 
@@ -40,17 +40,41 @@ cp ~/Downloads/"[expo]_comladoaladoapp_AppStore_20260121T165956793Z (1).mobilepr
 
 ---
 
-### 2. Instalar pods (se necessário)
+### 2. Sincronizar versão — expo prebuild
+
+**Obrigatório sempre.** Regenera o `ios/` a partir do `app.json`, garantindo que `Info.plist` reflita a versão atual antes do archive. Sem este passo, o `CFBundleShortVersionString` no binário pode ficar desatualizado.
+
+```bash
+cd /Users/fipacheco/lado-a-lado && npx expo prebuild --platform ios --no-install 2>&1
+```
+
+Após o prebuild, verificar que a versão no `Info.plist` bate com o `app.json`:
+
+```bash
+VERSION=$(node -e "const j=require('./app.json');console.log(j.expo.version)")
+PLIST_VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" /Users/fipacheco/lado-a-lado/ios/LadoaLado/Info.plist)
+if [ "$VERSION" != "$PLIST_VERSION" ]; then
+  echo "ERRO: versão app.json ($VERSION) ≠ Info.plist ($PLIST_VERSION)"
+  exit 1
+fi
+echo "Versão OK: $VERSION"
+```
+
+Se a verificação falhar, **interromper o build** e investigar antes de continuar.
+
+---
+
+### 3. Instalar pods (se necessário)
 
 ```bash
 cd /Users/fipacheco/lado-a-lado/ios && unset NODE_OPTIONS && pod install
 ```
 
-> Pular se `Podfile.lock` não tiver mudado desde o último build.
+> O prebuild pode ter alterado o `Podfile` — rodar `pod install` sempre após o prebuild para garantir consistência.
 
 ---
 
-### 3. Arquivar o app
+### 5. Arquivar o app
 
 ```bash
 mkdir -p /tmp/ladoalado-build
@@ -70,7 +94,7 @@ xcodebuild archive \
 
 ---
 
-### 4. Exportar IPA
+### 6. Exportar IPA
 
 Criar `/tmp/ladoalado-build/ExportOptions.plist`:
 
@@ -110,7 +134,7 @@ xcodebuild -exportArchive \
 
 ---
 
-### 5. Enviar para a Apple (automático)
+### 7. Enviar para a Apple (automático)
 
 ```bash
 xcrun altool --upload-app \
@@ -125,7 +149,7 @@ xcrun altool --upload-app \
 
 ---
 
-### 6. Commitar bump de versão
+### 8. Commitar bump de versão
 
 Após upload bem-sucedido, commitar o `app.json` com a nova versão:
 
@@ -138,7 +162,7 @@ git commit -m "chore: bump versão para ${VERSION}"
 
 ---
 
-### 7. Perguntar sobre submissão para revisão
+### 9. Perguntar sobre submissão para revisão
 
 **⚠️ NUNCA submeter para revisão automaticamente. NUNCA submeter sem pedido explícito.**
 
@@ -146,10 +170,10 @@ Após o upload e o commit, perguntar ao usuário:
 
 > "Build `<versão>` enviado com sucesso para a Apple. Deseja submeter para revisão na App Store agora?"
 
-- Se o usuário responder **sim** (ou tiver solicitado explicitamente ao invocar a skill): executar o passo 7a.
+- Se o usuário responder **sim** (ou tiver solicitado explicitamente ao invocar a skill): executar o passo 9a.
 - Se **não**, encerrar. O usuário pode pedir a submissão depois com a frase "submete para revisão" ou similar.
 
-#### 7a. Gerar o texto "O que há de novo"
+#### 9a. Gerar o texto "O que há de novo"
 
 Antes de submeter, gerar automaticamente o texto analisando o git log desde o último bump de versão:
 
@@ -168,7 +192,7 @@ Aplicar as regras do CLAUDE.md:
 
 Apresentar o texto gerado ao usuário e perguntar se aprova ou quer ajustar antes de prosseguir.
 
-#### 7b. Submeter para revisão (somente quando autorizado)
+#### 9b. Submeter para revisão (somente quando autorizado)
 
 O script abaixo:
 1. Cria a versão no App Store Connect (se ainda não existir)

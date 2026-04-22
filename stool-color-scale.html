@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Escala de Cores do Cocô — Bebê</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, sans-serif;
+      background: #1a1a1a;
+      color: #f0f0f0;
+      padding: 2rem;
+      min-height: 100vh;
+    }
+    h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+      color: #fff;
+    }
+    .subtitle {
+      font-size: 0.8rem;
+      color: #888;
+      margin-bottom: 2rem;
+    }
+    .section-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+    }
+    .abnormal-label { color: #f87171; }
+    .normal-label { color: #86efac; }
+    .row {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 2.5rem;
+    }
+    .swatch {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.6rem;
+      width: 120px;
+    }
+    .circle {
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.08);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+    }
+    .badge {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 99px;
+      letter-spacing: 0.05em;
+    }
+    .badge-abnormal { background: #7f1d1d; color: #fca5a5; }
+    .badge-normal { background: #14532d; color: #86efac; }
+    .hex {
+      font-family: 'Courier New', monospace;
+      font-size: 0.75rem;
+      color: #aaa;
+    }
+    .rgb {
+      font-size: 0.65rem;
+      color: #666;
+      text-align: center;
+    }
+    .desc {
+      font-size: 0.7rem;
+      color: #ccc;
+      text-align: center;
+      line-height: 1.3;
+    }
+    .divider {
+      border: none;
+      border-top: 1px solid #333;
+      margin: 1rem 0 2rem;
+    }
+    .source {
+      font-size: 0.65rem;
+      color: #555;
+      margin-top: 1rem;
+    }
+    .card-number {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #fff;
+    }
+    .num-abnormal { background: #7f1d1d; }
+    .num-normal { background: #166534; }
+  </style>
+</head>
+<body>
+
+  <h1>Escala de Cores do Cocô — Bebê</h1>
+  <p class="subtitle">Taiwan Stool Color Card · PoopMD (PLOS ONE, 2015)</p>
+
+  <p class="section-label abnormal-label">Cores anormais (achólicas) — cartão 1–3</p>
+  <div class="row">
+
+    <div class="swatch">
+      <div class="card-number num-abnormal">1</div>
+      <div class="circle" style="background:#F8FCCF"></div>
+      <span class="badge badge-abnormal">Anormal</span>
+      <span class="hex">#F8FCCF</span>
+      <span class="rgb">rgb(248, 252, 207)</span>
+      <span class="desc">Branco-amarelado<br>giz / calcário</span>
+    </div>
+
+    <div class="swatch">
+      <div class="card-number num-abnormal">2</div>
+      <div class="circle" style="background:#E7E9C2"></div>
+      <span class="badge badge-abnormal">Anormal</span>
+      <span class="hex">#E7E9C2</span>
+      <span class="rgb">rgb(231, 233, 194)</span>
+      <span class="desc">Bege-claro<br>argila clara</span>
+    </div>
+
+    <div class="swatch">
+      <div class="card-number num-abnormal">3</div>
+      <div class="circle" style="background:#CCC182"></div>
+      <span class="badge badge-abnormal">Anormal</span>
+      <span class="hex">#CCC182</span>
+      <span class="rgb">rgb(204, 193, 130)</span>
+      <span class="desc">Amarelo-palha<br>bege-escuro</span>
+    </div>
+
+    <div class="swatch">
+      <div class="card-number num-abnormal">⚠</div>
+      <div class="circle" style="background:#711B0E"></div>
+      <span class="badge badge-abnormal">Urgência</span>
+      <span class="hex">#711B0E</span>
+      <span class="rgb">rgb(113, 27, 14)</span>
+      <span class="desc">Vermelho-escuro<br>sangue / BA grave</span>
+    </div>
+
+    <div class="swatch">
+      <div class="card-number num-abnormal">●</div>
+      <div class="circle" style="background:#1C1A10"></div>
+      <span class="badge badge-abnormal">Atenção</span>
+      <span class="hex">#1C1A10</span>
+      <span class="rgb">rgb(28, 26, 16)</span>
+      <span class="desc">Preto/Mecônio<br>sangue digerido</span>
+    </div>
+
+  </div>
+
+  <hr class="divider">
+
+  <p class="section-label normal-label">Cores normais — cartão 4–7</p>
+  <div class="row">
+
+    <div class="swatch">
+      <div class="card-number num-normal">4</div>
+      <div class="circle" style="background:#EEF214"></div>
+      <span class="badge badge-normal">Normal</span>
+      <span class="hex">#EEF214</span>
+      <span class="rgb">rgb(238, 242, 20)</span>
+      <span class="desc">Amarelo-brilhante<br>amamentação típica</span>
+    </div>
+
+    <div class="swatch">
+      <div class="card-number num-normal">5</div>
+      <div class="circle" style="background:#DCB200"></div>
+      <span class="badge badge-normal">Normal</span>
+      <span class="hex">#DCB200</span>
+      <span class="rgb">rgb(220, 178, 0)</span>
+      <span class="desc">Amarelo-mostarda</span>
+    </div>
+
+    <div class="swatch">
+      <div class="card-number num-normal">6</div>
+      <div class="circle" style="background:#B98D03"></div>
+      <span class="badge badge-normal">Normal</span>
+      <span class="hex">#B98D03</span>
+      <span class="rgb">rgb(185, 141, 3)</span>
+      <span class="desc">Marrom-dourado<br>ocre</span>
+    </div>
+
+    <div class="swatch">
+      <div class="card-number num-normal">7</div>
+      <div class="circle" style="background:#B4C800"></div>
+      <span class="badge badge-normal">Normal</span>
+      <span class="hex">#B4C800</span>
+      <span class="rgb">rgb(180, 200, 0)</span>
+      <span class="desc">Amarelo-verde<br>transição</span>
+    </div>
+
+  </div>
+
+  <p class="source">
+    Fonte: Franciscovich et al., "PoopMD, a Mobile Health Application, Accurately Identifies Infant Acholic Stools",
+    PLOS ONE 2015 · Taiwan Stool Color Card
+  </p>
+
+</body>
+</html>
