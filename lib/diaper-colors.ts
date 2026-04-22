@@ -79,21 +79,19 @@ async function extractRGBOnNative(
   imageUri: string,
 ): Promise<[number, number, number] | null> {
   try {
-    const FileSystem = await import('expo-file-system');
     const jpeg = await import('jpeg-js');
 
-    const b64 = await FileSystem.readAsStringAsync(imageUri, {
-      encoding: 'base64' as any,
-    });
+    // fetch() com file:// URI usa o networking stack do RN, não TurboModule —
+    // evita o crash de NSException no Hermes que expo-file-system provocava.
+    const response = await fetch(imageUri);
+    if (!response.ok) return null;
+    const arrayBuffer = await response.arrayBuffer();
 
-    // Decodifica em JS puro — zero módulo nativo, evita crash do TurboModule
-    const buf = Uint8Array.from(atob(b64), c => c.charCodeAt(0)).buffer;
-    const { data, width, height } = jpeg.decode(new Uint8Array(buf) as any, {
+    const { data, width, height } = jpeg.decode(new Uint8Array(arrayBuffer) as any, {
       useTArray: true,
       formatAsRGBA: true,
     });
 
-    // Samplea o pixel central (índice no array RGBA = (cy * width + cx) * 4)
     const cx = Math.floor(width / 2);
     const cy = Math.floor(height / 2);
     const i = (cy * width + cx) * 4;
