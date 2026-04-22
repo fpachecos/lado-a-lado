@@ -76,18 +76,18 @@ async function extractRGBOnWeb(
 }
 
 async function extractRGBOnNative(
-  imageUri: string,
+  base64: string,
 ): Promise<[number, number, number] | null> {
   try {
     const jpeg = await import('jpeg-js');
 
-    // fetch() com file:// URI usa o networking stack do RN, não TurboModule —
-    // evita o crash de NSException no Hermes que expo-file-system provocava.
-    const response = await fetch(imageUri);
-    if (!response.ok) return null;
-    const arrayBuffer = await response.arrayBuffer();
+    // base64 vem direto do ImagePicker (base64: true) — zero chamada de TurboModule
+    // adicional, evitando o crash de NSException/Hermes no iOS 26 beta.
+    const binary = atob(base64);
+    const buf = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) buf[i] = binary.charCodeAt(i);
 
-    const { data, width, height } = jpeg.decode(new Uint8Array(arrayBuffer) as any, {
+    const { data, width, height } = jpeg.decode(buf as any, {
       useTArray: true,
       formatAsRGBA: true,
     });
@@ -103,12 +103,13 @@ async function extractRGBOnNative(
 
 export async function detectPoopColorFromImage(
   imageUri: string,
+  base64: string | null = null,
 ): Promise<PoopColorId | null> {
   try {
     const { Platform } = await import('react-native');
     const rgb = Platform.OS === 'web'
       ? await extractRGBOnWeb(imageUri)
-      : await extractRGBOnNative(imageUri);
+      : base64 ? await extractRGBOnNative(base64) : null;
     if (!rgb) return null;
     return closestPoopColor(rgb);
   } catch (e) {

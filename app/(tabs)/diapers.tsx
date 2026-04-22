@@ -205,16 +205,17 @@ export default function DiapersScreen() {
       mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 0.5,
+      quality: 0.3,
+      base64: true,
     });
 
     if (!result.canceled && result.assets[0]) {
-      const uri = result.assets[0].uri;
-      setPhotoUri(uri);
+      const asset = result.assets[0];
+      setPhotoUri(asset.uri);
       setAnalyzingPhoto(true);
       setPhotoDetected(false);
       try {
-        const detected = await detectPoopColorFromImage(uri);
+        const detected = await detectPoopColorFromImage(asset.uri, asset.base64 ?? null);
         if (detected) {
           setPoopColor(detected);
           setPhotoDetected(true);
