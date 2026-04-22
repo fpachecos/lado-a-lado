@@ -78,42 +78,29 @@ async function extractRGBOnWeb(
 async function extractRGBOnNative(
   imageUri: string,
 ): Promise<[number, number, number] | null> {
-  const { ImageManipulator, SaveFormat } = await import('expo-image-manipulator');
-  const { inflate } = await import('pako');
+  try {
+    const FileSystem = await import('expo-file-system');
+    const jpeg = await import('jpeg-js');
 
-  const ctx = ImageManipulator.manipulate(imageUri);
-  ctx.resize({ width: 1, height: 1 });
-  const image = await ctx.renderAsync();
-  const result = await image.saveAsync({ format: SaveFormat.PNG, base64: true });
+    const b64 = await FileSystem.readAsStringAsync(imageUri, {
+      encoding: 'base64' as any,
+    });
 
-  if (!result.base64) return null;
+    // Decodifica em JS puro — zero módulo nativo, evita crash do TurboModule
+    const buf = Uint8Array.from(atob(b64), c => c.charCodeAt(0)).buffer;
+    const { data, width, height } = jpeg.decode(new Uint8Array(buf) as any, {
+      useTArray: true,
+      formatAsRGBA: true,
+    });
 
-  const binary = atob(result.base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-
-  let offset = 8;
-  while (offset + 12 <= bytes.length) {
-    const length =
-      (((bytes[offset] << 24) |
-        (bytes[offset + 1] << 16) |
-        (bytes[offset + 2] << 8) |
-        bytes[offset + 3]) >>>
-        0);
-    const type = String.fromCharCode(
-      bytes[offset + 4],
-      bytes[offset + 5],
-      bytes[offset + 6],
-      bytes[offset + 7],
-    );
-    if (type === 'IDAT') {
-      const decompressed = inflate(bytes.slice(offset + 8, offset + 8 + length));
-      return [decompressed[1], decompressed[2], decompressed[3]];
-    }
-    if (type === 'IEND') break;
-    offset += 4 + 4 + length + 4;
+    // Samplea o pixel central (índice no array RGBA = (cy * width + cx) * 4)
+    const cx = Math.floor(width / 2);
+    const cy = Math.floor(height / 2);
+    const i = (cy * width + cx) * 4;
+    return [data[i], data[i + 1], data[i + 2]];
+  } catch {
+    return null;
   }
-  return null;
 }
 
 export async function detectPoopColorFromImage(
@@ -121,11 +108,9 @@ export async function detectPoopColorFromImage(
 ): Promise<PoopColorId | null> {
   try {
     const { Platform } = await import('react-native');
-    const rgb =
-      Platform.OS === 'web'
-        ? await extractRGBOnWeb(imageUri)
-        : await extractRGBOnNative(imageUri);
-
+    const rgb = Platform.OS === 'web'
+      ? await extractRGBOnWeb(imageUri)
+      : await extractRGBOnNative(imageUri);
     if (!rgb) return null;
     return closestPoopColor(rgb);
   } catch (e) {
