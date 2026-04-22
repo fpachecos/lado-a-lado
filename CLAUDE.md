@@ -20,6 +20,34 @@ Não remover `aps-environment` do entitlements como workaround — usar o profil
 
 ---
 
+## Versionamento — Padrão obrigatório
+
+O app usa versionamento **x.y.z** com a seguinte semântica:
+
+| Segmento | Quando incrementar |
+|---|---|
+| **x** (major) | Mudança estrutural incompatível (raro) |
+| **y** (minor) | Nova funcionalidade visível ao usuário |
+| **z** (patch) | Correção de bug ou ajuste sem nova funcionalidade |
+
+**Regra de bump:**
+- Ao fazer um novo build, incrementar **y** (minor) se houver pelo menos uma nova feature desde a última versão `x.(y-1).z`. Caso contrário, incrementar **z** (patch).
+- O `buildNumber` em `app.json` deve sempre espelhar a versão: `"buildNumber": "<x.y.z>"`.
+- O commit de bump deve ter a mensagem: `chore: bump versão para <x.y.z>`.
+
+**Marcador de referência:** o commit `chore: bump versão para <versão>` é o ponto de corte para análise de mudanças. Para saber o que mudou em uma versão `x.y.z`, fazer `git log` desde o commit de bump da versão anterior (`x.(y-1).z` ou `x.y.(z-1)`).
+
+**Geração do "O que há de novo":**
+
+Ao preparar o texto para a App Store, analisar os commits desde o último bump e seguir estas regras:
+
+1. Commits `feat:` / `feat(...):`  → descrever como **nova funcionalidade**, na perspectiva do usuário final, em linguagem simples e não técnica. Ex: `feat(feedings): adicionar relatório semanal` → "Agora você pode ver um resumo semanal das mamadas do seu bebê."
+2. Commits `fix:` / `fix(...):` → **não listar individualmente**; agrupar em uma linha genérica no final: "Melhorias de estabilidade e correções de problemas."
+3. Commits `chore:`, `docs:`, `refactor:`, `test:`, `ci:` → **ignorar** (não aparecem para o usuário).
+4. Escrever em português, tom informal e caloroso — o público é pais e mães com bebê recém-nascido.
+
+---
+
 ## Geração de imagens — Escopo restrito
 
 Nunca usar geração de imagens (Gemini, Pollinations, HF ou qualquer outra IA) para criar assets do app (icon, splash, favicon, ilustrações, etc.) sem confirmação explícita do usuário. Geração de imagem é exclusiva para posts do Instagram (`/instagram-publisher`, `/instagram-planner`). Para qualquer outro uso, perguntar antes.
