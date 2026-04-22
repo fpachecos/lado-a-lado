@@ -17,12 +17,14 @@
     "expo-clipboard": "~55.0.13",
     "expo-constants": "~55.0.13",
     "expo-dev-client": "~55.0.26",
+    "expo-image-manipulator": "~55.0.15",
     "expo-image-picker": "~55.0.18",
     "expo-linear-gradient": "~55.0.13",
     "expo-linking": "~55.0.12",
     "expo-notifications": "~55.0.18",
     "expo-router": "~55.0.12",
     "expo-status-bar": "~55.0.5",
+    "pako": "^2.1.0",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "react-native": "0.83.4",
@@ -38,6 +40,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.24.0",
+    "@types/pako": "^2.0.4",
     "@types/react": "~19.2.10",
     "playwright": "^1.59.1",
     "typescript": "^5.1.3"

@@ -94,6 +94,15 @@ export interface BabyFeeding {
   created_at: string;
 }
 
+export interface BabyDiaper {
+  id: string;
+  baby_id: string;
+  recorded_at: string;
+  type: 'pee' | 'poop' | 'both';
+  poop_color: 'c1' | 'c2' | 'c3' | 'blood' | 'black' | 'c4' | 'c5' | 'c6' | 'c7' | null;
+  created_at: string;
+}
+
 export interface UserInvite {
   id: string;
   inviter_id: string;
