@@ -146,7 +146,38 @@ Para **carrossel**: gerar uma imagem por slide, traduzindo a descrição de cada
 - **Sempre gerar sem texto:** toda imagem deve ter `no text, no lettering, no watermark` no final do prompt
 - Para slides de carrossel: incluir `leave empty space at top (~30% height) for text overlay` quando o OVERLAY for `posição: top`
 - Para imagens únicas: sem modificações de espaço
-- Máximo de 4 slides por carrossel
+- Máximo de 6 slides por carrossel
+
+#### Diretrizes de composição visual obrigatórias
+
+**Figuras humanas > ícones e objetos.**
+Toda imagem deve transmitir emoção real através de pessoas. Regras:
+- Priorizar cenas com figuras humanas em interação real: mãe com bebê, avó segurando recém-nascido, casal olhando para o bebê juntos, visitante chegando com sorriso, etc.
+- A emoção da cena deve ser legível: ternura, alívio, cansaço amoroso, alegria contida, conexão intergeracional
+- Evitar ilustrações de ícones soltos (smartphone, campainha, relógio, etc.) como elemento principal — usar como detalhe secundário no máximo
+- Estilo preferido: fotorrealista editorial ou ilustração flat/aquarela com personagens expressivos e humanizados
+- Sem poses artificiais ou stock photo genérico — buscar naturalidade e intimidade
+- **Bebê sempre visível como figura inteira** — nunca descrever cenas onde o bebê aparece apenas como detalhe (só pés, só mão). O bebê deve ser visível no colo, no braço ou deitado, com o corpo reconhecível. Detalhe de pés/mãos só como elemento secundário da composição, nunca o foco principal.
+
+#### Paleta de cores obrigatória (identidade Lado a Lado)
+
+Todos os posts devem seguir a identidade visual do app. Exceções só para datas especiais com justificativa explícita no plano.
+
+| Elemento | Cor | Hex |
+|---|---|---|
+| Cor primária | Coral Suave | `#FF6F61` |
+| Cor secundária | Verde-Menta | `#A8D5BA` |
+| Fundo base | Bege Quente | `#F4E4BC` |
+| Gradiente (início) | Pêssego | `#FFD4BF` |
+| Gradiente (meio) | Creme | `#FCE8C4` |
+| Gradiente (fim) | Dourado Âmbar | `#F0C87A` |
+| Texto principal | Marrom Escuro Quente | `#2D2018` |
+| Texto sobre fundos coloridos | Branco Off | `#FAFAFA` |
+
+- Fundos de slides: usar o gradiente quente ou o bege `#F4E4BC` como base
+- Bandas de overlay (texto): usar coral `#FF6F61` ou uma variação escura `#D95F50` para destaques primários; verde-menta `#A8D5BA` ou `#7DB89A` para destaques secundários
+- Slides CTA (último slide): fundo coral sólido `#FF6F61` com texto branco `#FAFAFA`
+- Nunca usar azul bebê (#5B9BD5) ou amarelo-mel (#F5C842) como cor principal — não fazem parte da identidade do app
 
 ### 2c. Sobrepor texto nas imagens de carrossel (Pillow)
 
@@ -165,6 +196,23 @@ python3 /Users/fipacheco/lado-a-lado/.claude/skills/instagram-publisher/scripts/
 ```
 
 Usar sempre o arquivo `-final.jpg` para o upload (não o original sem texto).
+
+### 2d. Validação obrigatória das imagens antes de publicar
+
+**Após gerar todas as imagens** (e aplicar overlays quando houver), exibir cada imagem ao usuário e aguardar aprovação explícita antes de prosseguir para o upload e publicação.
+
+Formato de apresentação:
+```
+🖼️ Post <N> — Slide <S>: [exibir imagem]
+Descrição gerada: <resumo do que aparece na imagem>
+✅ Aprovar / ❌ Regerar
+```
+
+- Se o usuário aprovar todas: prosseguir para o passo 3 (upload + publicação).
+- Se reprovar alguma: pedir instrução de ajuste, regerar apenas o(s) slide(s) reprovados e reapresentar.
+- **Nunca fazer upload nem publicar sem aprovação explícita do usuário.**
+
+---
 
 ### 3. Hospedar imagens no litterbox.catbox.moe (anônimo, sem cadastro)
 
@@ -204,7 +252,7 @@ python3 /Users/fipacheco/lado-a-lado/.claude/skills/instagram-publisher/scripts/
 # Carrossel (2–4 imagens)
 python3 /Users/fipacheco/lado-a-lado/.claude/skills/instagram-publisher/scripts/publish_instagram.py \
   --tipo carrossel \
-  --imagens "https://url1.jpg" "https://url2.jpg" "https://url3.jpg" "https://url4.jpg" \
+  --imagens "https://url1.jpg" "https://url2.jpg" "https://url3.jpg" "https://url4.jpg" "https://url5.jpg" "https://url6.jpg" \
   --legenda "Legenda do post"
 
 # Dry-run (cria containers mas não publica)
