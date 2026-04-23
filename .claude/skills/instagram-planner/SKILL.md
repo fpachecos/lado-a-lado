@@ -370,11 +370,55 @@ Toda legenda deve seguir esta estrutura:
 
 ### Carrossel: boas práticas
 
-- **Máximo 4 slides por carrossel** — limite de custo de geração de imagens
-- **Slide 1 (capa)**: deve funcionar como thumbnail autônomo — frase forte, visual impactante
+- **Máximo 6 slides por carrossel** — o espaço extra permite narrativa mais rica sem cortar conteúdo
+- **Slide 1 (capa)**: deve funcionar como thumbnail autônomo — frase forte, visual impactante com figura humana
 - **Slide 2**: entregar o primeiro valor imediatamente — não desperdiçar com introdução
 - **Último slide**: sempre com CTA claro, alinhado à `acao_alvo`
 - Cada slide: 1 ideia, 1 visual, texto mínimo legível
+
+### Composição visual — Figuras humanas obrigatórias
+
+Toda imagem do plano deve priorizar figuras humanas em interação real. Regras para `descricao_imagem`:
+
+- **Cenas com pessoas** > ícones isolados > objetos. Ícones de smartphone/campainha/relógio são permitidos apenas como detalhe secundário, nunca como elemento principal.
+- Descrever sempre: quem aparece (mãe, pai, avó, visitante, casal), o que estão fazendo, e a **emoção** que transmitem (ternura, alívio, cansaço amoroso, alegria contida, conexão, surpresa positiva).
+- Evitar: pose artificial, stock genérico, figuras sem expressão, cenas sem contexto emocional.
+- Estilo preferido: fotorrealista editorial de maternidade ou ilustração flat/aquarela com personagens expressivos.
+
+### Paleta de cores obrigatória (identidade Lado a Lado)
+
+Usar a paleta do app em todos os posts. Exceções apenas para datas especiais, com justificativa no plano.
+
+| Elemento | Cor | Hex |
+|---|---|---|
+| Primária | Coral Suave | `#FF6F61` |
+| Secundária | Verde-Menta | `#A8D5BA` |
+| Fundo base | Bege Quente | `#F4E4BC` |
+| Gradiente início | Pêssego | `#FFD4BF` |
+| Gradiente meio | Creme | `#FCE8C4` |
+| Gradiente fim | Dourado Âmbar | `#F0C87A` |
+| Texto principal | Marrom Escuro Quente | `#2D2018` |
+| Texto sobre cor | Branco Off | `#FAFAFA` |
+
+Regras de aplicação:
+- Fundo dos slides: gradiente quente ou `#F4E4BC` como base
+- Bandas de overlay: coral `#FF6F61` (primário) ou verde-menta `#7DB89A` (secundário)
+- Slide CTA (último): fundo coral `#FF6F61`, texto `#FAFAFA`
+- **Proibido** usar azul bebê (#5B9BD5), amarelo-mel (#F5C842) ou verde-menta como primária — são cores externas à identidade
+
+### Diversidade de funcionalidades — Regra obrigatória
+
+O app tem múltiplas funcionalidades. Todo plano mensal deve cobrir **pelo menos 2 funcionalidades diferentes**:
+
+| Funcionalidade | Descrição |
+|---|---|
+| Agendas de visita | Criar agenda, compartilhar link, família escolhe horário |
+| Registro de mamadas | Hora, qual seio, duração, relatório diário/semanal |
+| Peso e altura do bebê | Curva de crescimento, marcos do pediatra |
+| Fraldas | Registro de troca, controle de padrão |
+| Acompanhantes | Quem visita, atividades registradas |
+
+Nunca concentrar todos os posts de produto/funcionalidade na mesma feature no mesmo mês.
 
 ### Texto nas imagens — OBRIGATÓRIO para carrosséis
 
