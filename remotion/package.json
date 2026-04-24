@@ -1,0 +1,25 @@
+{
+  "name": "lado-a-lado-remotion",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "npx remotion studio",
+    "render:all": "node render-all.mjs",
+    "render:agendas": "npx remotion render AgendaVideo out/agendas.mp4",
+    "render:mamadas": "npx remotion render MamadasVideo out/mamadas.mp4",
+    "render:peso": "npx remotion render PesoVideo out/peso.mp4",
+    "render:fraldas": "npx remotion render FraldasVideo out/fraldas.mp4",
+    "render:acompanhantes": "npx remotion render AcompanhantesVideo out/acompanhantes.mp4"
+  },
+  "dependencies": {
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "remotion": "^4.0.0",
+    "@remotion/cli": "^4.0.0",
+    "@remotion/renderer": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.0",
+    "typescript": "^5.0.0"
+  }
+}
