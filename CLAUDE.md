@@ -20,6 +20,16 @@ Não remover `aps-environment` do entitlements como workaround — usar o profil
 
 ---
 
+## Nova feature ou atualização significativa — Checklist obrigatório
+
+Sempre que uma nova funcionalidade for desenvolvida ou uma existente for significativamente alterada, atualizar **antes de considerar a tarefa concluída**:
+
+1. **`README.md`** (raiz) — seção "Funcionalidades" correspondente + tabela de banco de dados (se nova tabela) + comentário `<!-- nicho: ... -->` se a descrição do app mudar
+
+O `README.md` é a **fonte única de verdade** sobre o app. Todas as skills de Instagram (`/instagram-planner`, `/instagram-comment`, `/instagram-growth`) leem dele automaticamente via `grep "CONTEXTO DE MARKETING"`. Não há mais campos duplicados em outros arquivos.
+
+---
+
 ## Versionamento — Padrão obrigatório
 
 O app usa versionamento **x.y.z** com a seguinte semântica:
