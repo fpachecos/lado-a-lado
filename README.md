@@ -1,16 +1,47 @@
 # Lado a Lado
 
-App iOS/Android para organizar agendas de visitas à maternidade. Expo (React Native) + Supabase.
+App iOS/Android de organização do puerpério e dos primeiros meses do bebê. Expo (React Native) + Supabase.
+
+<!-- CONTEXTO DE MARKETING — lido pelas skills de Instagram -->
+<!-- nicho: App completo de organização do puerpério e primeiros meses do bebê -->
+<!-- publico_alvo: Mães grávidas e recém-paridas, parceiros e pais de primeira viagem — pessoas vivendo o caos organizado do puerpério e dos primeiros meses com bebê -->
+<!-- tom_de_voz: Acolhedor, descontraído, empático — fala como amigo que entende o caos gostoso da maternidade -->
 
 ## Funcionalidades
 
+### Agendas de visitas
+- Cria agendas com dias e horários disponíveis
+- Define capacidade por slot (quantas pessoas por horário)
+- Gera link público — visitantes confirmam presença sem precisar de login
+- Acompanha visitas confirmadas em tempo real
+- Plano Premium: agendas com múltiplos dias
+
+### Registro de mamadas
+- Registra horário de início e fim, qual seio e duração
+- Calcula automaticamente o intervalo entre mamadas
+- Relatório diário e histórico dos últimos dias
+- Dados prontos para compartilhar com o pediatra
+
+### Crescimento do bebê
+- Registro de peso e altura ao longo do tempo
+- Curva de crescimento com marcos do pediatra
+
+### Registro de fraldas
+- Controle de trocas com horário e tipo
+- Acompanhamento de padrões ao longo do dia
+
+### Calendário de vacinas
+- Calendário vacinal do bebê com datas e registros
+
+### Acompanhantes
+- Cadastro de acompanhantes (familiares, amigos)
+- Registro de atividades por acompanhante (em markdown)
+- Convites por e-mail: acompanhantes co-gerenciam a agenda
+
+### Conta e segurança
 - Autenticação Supabase (login, cadastro, recuperação de senha)
-- Cadastro de informações do bebê
-- Criação e gestão de agendas de visitas com slots de horário
-- Controle de capacidade por slot
-- Link público para visitantes confirmarem presença sem login
-- Sistema de convites por e-mail (acompanhantes co-gerenciam a agenda)
-- Integração RevenueCat — plano premium: múltiplos dias por agenda
+- Notificações configuráveis por preferência
+- Dados isolados por usuário com RLS ativo
 
 ## Pré-requisitos
 

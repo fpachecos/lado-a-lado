@@ -37,13 +37,22 @@ Se não houver config, usar os seguintes **defaults do projeto Lado a Lado** e s
 ```json
 {
   "handle": "@app.ladoalado",
-  "nicho": "App de gerenciamento de agendas de visitas ao bebê recém-nascido — organiza visitas de familiares e amigos para mães, pais e parceiros",
-  "publico_alvo": "Mães grávidas e recém-paridas, parceiros e pais de primeira viagem, familiares que querem visitar o bebê de forma organizada",
   "tom_de_voz": "Acolhedor, descontraído, empático — fala como amigo que entende o caos gostoso da maternidade",
   "projeto_dir": "/Users/fipacheco/lado-a-lado",
   "meta_access_token_env": "META_ACCESS_TOKEN"
 }
 ```
+
+**`nicho` e `publico_alvo` não ficam no config — lê sempre do README:**
+
+```bash
+cat /Users/fipacheco/lado-a-lado/README.md | grep -A 2 "CONTEXTO DE MARKETING"
+```
+
+Os campos estão nos comentários HTML logo abaixo do título principal:
+- `<!-- nicho: ... -->` — descrição completa do app para estratégia de conteúdo
+- `<!-- publico_alvo: ... -->` — audiência-alvo
+- `<!-- tom_de_voz: ... -->` — tom de comunicação
 
 Só perguntar ao usuário se ele explicitamente pedir para usar outra conta ou nicho diferente.
 
@@ -408,17 +417,13 @@ Regras de aplicação:
 
 ### Diversidade de funcionalidades — Regra obrigatória
 
-O app tem múltiplas funcionalidades. Todo plano mensal deve cobrir **pelo menos 2 funcionalidades diferentes**:
+O app tem múltiplas funcionalidades. Ler a lista completa e atualizada sempre do README:
 
-| Funcionalidade | Descrição |
-|---|---|
-| Agendas de visita | Criar agenda, compartilhar link, família escolhe horário |
-| Registro de mamadas | Hora, qual seio, duração, relatório diário/semanal |
-| Peso e altura do bebê | Curva de crescimento, marcos do pediatra |
-| Fraldas | Registro de troca, controle de padrão |
-| Acompanhantes | Quem visita, atividades registradas |
+```bash
+cat /Users/fipacheco/lado-a-lado/README.md | grep -A 100 "^## Funcionalidades" | grep -B 100 "^## Pré-requisitos" | grep "^###"
+```
 
-Nunca concentrar todos os posts de produto/funcionalidade na mesma feature no mesmo mês.
+Todo plano mensal deve cobrir **pelo menos 2 funcionalidades diferentes**. Nunca concentrar todos os posts de produto na mesma feature no mesmo mês.
 
 ### Texto nas imagens — OBRIGATÓRIO para carrosséis
 
