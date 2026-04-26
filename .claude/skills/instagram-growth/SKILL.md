@@ -84,30 +84,31 @@ curl -s -G "https://graph.facebook.com/v19.0/{HASHTAG_ID}/top_media" \
   --data-urlencode "access_token=${TOKEN}"
 ```
 
-#### 2c. Extrair handles dos permalinks
+#### 2c. Extrair handles dos permalinks via Chrome
 
-O campo `permalink` retorna URLs no formato `https://www.instagram.com/p/SHORTCODE/`. Não retorna o username diretamente. Extrair o handle a partir da Business Discovery **não** é possível direto.
+O Instagram bloqueia scraping via `curl` — as páginas exigem JavaScript para renderizar o conteúdo. O método correto é abrir cada permalink no Chrome e ler o meta tag `og:url`, que contém o handle no formato `https://www.instagram.com/USERNAME/p/SHORTCODE/`.
 
-**Alternativa: extrair via scraping leve do permalink**
+**IMPORTANTE:** navegação e leitura devem estar no mesmo arquivo AppleScript com `delay` embutido para evitar race condition.
 
-Para cada permalink, abrir no Chrome (ou usar curl com user-agent) e extrair o username do meta tag ou título:
+```python
+import subprocess, re
 
-```bash
-curl -sL -A "Mozilla/5.0" "{permalink}" \
-  | grep -o '"owner":{"username":"[^"]*"' \
-  | head -1 \
-  | grep -o '"username":"[^"]*"' \
-  | cut -d'"' -f4
-```
-
-Ou extrair do title da página HTML:
-```bash
-curl -sL -A "Mozilla/5.0" "{permalink}" \
-  | grep -o '<title>[^<]*</title>' \
-  | sed 's/<[^>]*>//g' \
-  | sed 's/ on Instagram.*//' \
-  | sed 's/^[^(]*(@//' \
-  | sed 's/).*//'
+def extrair_handle_chrome(permalink):
+    script = f"""
+tell application "Google Chrome"
+  set URL of active tab of front window to "{permalink}"
+end tell
+delay 5
+tell application "Google Chrome"
+  set r to execute active tab of front window javascript "var m=document.querySelector('meta[property=\\"og:url\\"]'); m?m.content:''"
+  return r
+end tell
+"""
+    with open("/tmp/ig_step.applescript", "w") as f:
+        f.write(script)
+    og_url = subprocess.run(["osascript", "/tmp/ig_step.applescript"], capture_output=True, text=True).stdout.strip()
+    m = re.search(r'instagram\.com/([^/]+)/p/', og_url)
+    return m.group(1) if m else None
 ```
 
 Coletar no máximo 5 permalinks por hashtag. Processar até ter 20 handles candidatos únicos.
@@ -120,11 +121,11 @@ Manter lista de candidatos únicos novos.
 
 ### 3. Pontuar e ranquear candidatos
 
-Para cada candidato, verificar via Business Discovery API se é acessível e coletar dados:
+Para cada candidato, verificar via Business Discovery API se é acessível e coletar dados, incluindo `biography`:
 
 ```bash
 curl -s -G "https://graph.facebook.com/v19.0/${IG_USER_ID}" \
-  --data-urlencode "fields=business_discovery.username({handle}){username,followers_count,media_count}" \
+  --data-urlencode "fields=business_discovery.username({handle}){username,followers_count,media_count,biography}" \
   --data-urlencode "access_token=${TOKEN}"
 ```
 
@@ -132,10 +133,34 @@ Classificar cada conta:
 - `acessivel_api: true` → Business/Creator account (preferível para rotação)
 - `acessivel_api: false` → conta pessoal (pode seguir, mas não entra na rotação)
 
-Pontuar candidatos preferindo:
-1. Contas acessíveis via API (Business/Creator)
-2. Seguidores entre 5k e 500k (micro/médio influenciador — mais engajamento relativo)
-3. Conteúdo recente (conta ativa)
+#### 3a. Filtro obrigatório de relevância de nicho
+
+**Antes de pontuar**, descartar candidatos sem relação forte com o nicho do app. O app é para pais de recém-nascidos gerirem visitas ao bebê — o nicho é: maternidade, bebê recém-nascido, pós-parto, puerpério, amamentação, pediatria, primeira viagem como mãe/pai.
+
+Avaliar a `biography` de cada conta. **Descartar** se a conta for:
+- Portal de notícias ou veículo de mídia (ex: sicnoticias, diariodonordeste)
+- Especialidade médica sem relação com bebê/maternidade (ex: otorrinolaringologia, cardiologia, dermatologia)
+- Influenciador de lifestyle genérico sem foco em maternidade/bebê
+- Loja de produtos não relacionados a bebê
+- Entretenimento geral, humor, viagens, esportes
+
+**Manter** se a conta for:
+- Mãe ou pai que posta sobre maternidade/paternidade real
+- Pediatra, obstetra, doula, parteira, enfermeira obstétrica
+- Perfil de dicas para mães/pais de bebê
+- Loja de produtos para bebê (enxoval, berço, carrinho)
+- Conteúdo sobre amamentação, pós-parto, desenvolvimento infantil
+
+Quando a biografia estiver vaga, usar o handle e o contexto da hashtag de origem para inferir relevância. Em caso de dúvida, excluir (é melhor não seguir do que seguir conta off-topic).
+
+#### 3b. Pontuar candidatos relevantes
+
+Pontuar os candidatos que passaram no filtro de nicho. **Critérios em ordem de peso:**
+
+1. **Taxa de engajamento estimada** — o sinal mais importante. Calcular `(like_count + comments_count) / followers_count` nos posts coletados. Preferir contas com taxa > 3% (micro-influenciadores nesse nicho costumam ter 5–12%). Conta de 15k com 8% de engajamento é mais valiosa para interação do que conta de 200k com 0.4% — o algoritmo já está distribuindo o conteúdo da primeira para um cluster ativo.
+2. **Acessível via API** (Business/Creator) — preferível para rotação de comentários
+3. **Seguidores entre 5k e 300k** — contas muito grandes têm engajamento diluído; contas muito pequenas têm alcance insuficiente
+4. **Conteúdo recente** (postou nos últimos 30 dias)
 
 Selecionar os **top 5** candidatos pontuados.
 
