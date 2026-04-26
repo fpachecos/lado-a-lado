@@ -106,10 +106,11 @@ Para cada post retornado, extrair:
 - `id`, `caption`, `timestamp`, `like_count`, `comments_count`, `permalink`, `media_type`
 
 **Critérios de seleção do post:**
-- Preferir o post mais recente (máximo 14 dias)
+- Preferir posts publicados há **menos de 6 horas** — o algoritmo testa distribuição nas primeiras 60–90 min e mantém o post ativo nas primeiras horas. Comentar nessa janela aumenta a visibilidade do comentário, pois o post ainda está recebendo distribuição.
+- Se não houver post recente (< 6h), usar o mais recente dentro de 14 dias
 - Excluir posts que pareçam publicidade patrocinada (caption contém "publicidade", "#publi", "parceria paga", cupom de desconto)
 - Preferir posts com caption substantiva (> 50 chars) — sem caption não há como elaborar comentário relevante
-- Se o post mais recente for patrocinado, tentar o segundo
+- Entre posts com tempo similar, preferir o que já tem mais engajamento relativo ao tamanho da conta (sinal de que o algoritmo já está distribuindo)
 
 ### 5. Elaborar comentário
 
@@ -128,6 +129,7 @@ Para cada post selecionado, redigir um comentário seguindo as regras:
 - Adicionar uma perspectiva real ao tema do post
 - Ressoar com a experiência do público (mães, pais de primeira viagem)
 - Ser específico o suficiente para parecer humano, genérico o suficiente para ser verdadeiro
+- **Terminar com uma pergunta genuína** quando possível — comentários que geram reply criam um thread, e threads são um sinal forte de engajamento que o algoritmo valoriza. A pergunta deve ser sobre o tema do post, não sobre o app. Ex: "Você sentiu isso logo nas primeiras semanas ou levou um tempo?" A pergunta não pode parecer um CTA — deve parecer curiosidade natural.
 
 ### 6. Apresentar para aprovação
 
