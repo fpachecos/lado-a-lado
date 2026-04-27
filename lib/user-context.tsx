@@ -11,6 +11,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { clearSessionForSiri, saveSessionForSiri } from '@/lib/session-sync';
+import { isPremiumUser } from '@/lib/revenuecat';
 
 interface UserContextValue {
   /** uid do usuário autenticado */
@@ -19,6 +20,10 @@ interface UserContextValue {
   effectiveUserId: string | null;
   /** true se este usuário está operando como convidado de outra conta */
   isInvited: boolean;
+  /** status premium global — compartilhado por todas as telas */
+  isPremium: boolean;
+  /** força re-checagem do status premium (chamar após compra/restore) */
+  refreshPremium: () => Promise<void>;
   /** recarrega o contexto (ex.: após aceitar um convite) */
   reload: () => void;
 }
@@ -27,6 +32,8 @@ const UserCtx = createContext<UserContextValue>({
   userId: null,
   effectiveUserId: null,
   isInvited: false,
+  isPremium: false,
+  refreshPremium: async () => {},
   reload: () => {},
 });
 
@@ -34,9 +41,15 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [userId, setUserId] = useState<string | null>(null);
   const [effectiveUserId, setEffectiveUserId] = useState<string | null>(null);
   const [isInvited, setIsInvited] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
   const [tick, setTick] = useState(0);
 
   const reload = useCallback(() => setTick((t) => t + 1), []);
+
+  const refreshPremium = useCallback(async () => {
+    const premium = await isPremiumUser();
+    setIsPremium(premium);
+  }, []);
 
   // Limpa dados da Siri quando o usuário faz logout
   useEffect(() => {
@@ -92,6 +105,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           saveSessionForSiri(session.access_token, user.id, baby.id);
         }
       }
+
+      if (!cancelled) {
+        const premium = await isPremiumUser();
+        if (!cancelled) setIsPremium(premium);
+      }
     }
 
     load();
@@ -99,7 +117,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   }, [tick]);
 
   return (
-    <UserCtx.Provider value={{ userId, effectiveUserId, isInvited, reload }}>
+    <UserCtx.Provider value={{ userId, effectiveUserId, isInvited, isPremium, refreshPremium, reload }}>
       {children}
     </UserCtx.Provider>
   );

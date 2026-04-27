@@ -1,11 +1,12 @@
 import Purchases, { CustomerInfo, PurchasesOffering } from 'react-native-purchases';
 import { Platform } from 'react-native';
+import { supabase } from './supabase';
 
 const REVENUECAT_API_KEY_IOS = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_IOS || '';
 
 // Temporário: desativa a verificação de premium e libera todas as funcionalidades para todos os usuários.
 // Problema: marketplace da Apple com assinaturas. Para reverter, mude para `false`.
-const PREMIUM_OVERRIDE = true;
+const PREMIUM_OVERRIDE = false;
 
 export const initializeRevenueCat = async () => {
   if (PREMIUM_OVERRIDE) return;
@@ -22,6 +23,7 @@ export const initializeRevenueCat = async () => {
 };
 
 export const getCustomerInfo = async (): Promise<CustomerInfo | null> => {
+  if (Platform.OS !== 'ios') return null;
   try {
     const customerInfo = await Purchases.getCustomerInfo();
 
@@ -42,6 +44,17 @@ export const getCustomerInfo = async (): Promise<CustomerInfo | null> => {
 export const isPremiumUser = async (): Promise<boolean> => {
   if (PREMIUM_OVERRIDE) return true;
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user?.email) {
+      const { data } = await supabase
+        .from('premium_whitelist')
+        .select('email')
+        .eq('email', user.email.toLowerCase())
+        .maybeSingle();
+      if (data) return true;
+    }
+  } catch {}
+  try {
     const customerInfo = await getCustomerInfo();
     return customerInfo?.entitlements.active['premium'] !== undefined;
   } catch (error) {
@@ -51,6 +64,7 @@ export const isPremiumUser = async (): Promise<boolean> => {
 };
 
 export const getOfferings = async (): Promise<PurchasesOffering | null> => {
+  if (PREMIUM_OVERRIDE) return null;
   try {
     const offerings = await Purchases.getOfferings();
     if (__DEV__) {
