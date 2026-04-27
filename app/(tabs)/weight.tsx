@@ -30,6 +30,8 @@ import { BlurView } from 'expo-blur';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useUserContext } from '@/lib/user-context';
+import { usePremium } from '@/lib/usePremium';
+import { PremiumGateBanner } from '@/components/PremiumGateBanner';
 
 // ─── Dados OMS: Peso por idade (0–24 meses) ───────────────────────────────────
 // https://www.who.int/tools/child-growth-standards/standards/weight-for-age
@@ -254,8 +256,11 @@ const MIN_RANGE = 1;
 
 type ActiveTab = 'weight' | 'height';
 
+const FREE_ENTRIES = 5;
+
 export default function GrowthScreen() {
   const { effectiveUserId } = useUserContext();
+  const { isPremium } = usePremium();
   const { width } = useWindowDimensions();
   const chartWidth = width - 40;
   const drawW = chartWidth - PAD.left - PAD.right;
@@ -428,6 +433,10 @@ export default function GrowthScreen() {
   // Pontos do gráfico
   const birth = baby?.birth_date ? parseISO(baby.birth_date) : null;
 
+  const displayWeights = isPremium ? weights : weights.slice(-FREE_ENTRIES);
+  const displayHeights = isPremium ? heights : heights.slice(-FREE_ENTRIES);
+
+  // Gráfico sempre usa dados completos (visível atrás do blur para usuários free)
   const weightPoints: GrowthPoint[] = birth
     ? weights.map(w => ({ ageMonths: ageInMonths(birth, parseISO(w.measured_at)), value: w.weight_grams / 1000 }))
     : [];
@@ -547,27 +556,45 @@ export default function GrowthScreen() {
                 )}
               </View>
 
-              {weights.length === 0 && !noBirthDate ? (
-                <Text style={styles.emptyChartText}>Nenhum peso registrado ainda.</Text>
-              ) : (
-                <GestureDetector gesture={wGesture}>
-                  <View style={styles.chartContainer}>
-                    <GrowthChart
-                      whoData={baby?.gender === 'female' ? WHO_WEIGHT_GIRLS : WHO_WEIGHT_BOYS}
-                      points={weightPoints} chartWidth={chartWidth}
-                      visibleStart={wStart} visibleEnd={wEnd}
-                      yTickStep={2} autoYMin={false} yUnit="kg" accentColor={Colors.primary}
-                    />
-                  </View>
-                </GestureDetector>
-              )}
+              <View style={styles.chartBlurWrapper}>
+                {weights.length === 0 && !noBirthDate ? (
+                  <Text style={styles.emptyChartText}>Nenhum peso registrado ainda.</Text>
+                ) : (
+                  <GestureDetector gesture={!isPremium ? Gesture.Manual() : wGesture}>
+                    <View style={styles.chartContainer}>
+                      <GrowthChart
+                        whoData={baby?.gender === 'female' ? WHO_WEIGHT_GIRLS : WHO_WEIGHT_BOYS}
+                        points={weightPoints} chartWidth={chartWidth}
+                        visibleStart={wStart} visibleEnd={wEnd}
+                        yTickStep={2} autoYMin={false} yUnit="kg" accentColor={Colors.primary}
+                      />
+                    </View>
+                  </GestureDetector>
+                )}
 
-              <ChartLegend accentColor={Colors.primary} accentLabel="Peso do bebê" />
-              <Text style={styles.zoomHint}>Pinça para zoom · arraste para navegar</Text>
+                <ChartLegend accentColor={Colors.primary} accentLabel="Peso do bebê" />
+                <Text style={styles.zoomHint}>Pinça para zoom · arraste para navegar</Text>
+
+                {!isPremium && (
+                  <BlurView intensity={55} tint="light" style={styles.chartGateOverlay}>
+                    <Ionicons name="lock-closed" size={28} color={Colors.primary} />
+                    <Text style={styles.chartGateTitle}>Curva OMS com percentis</Text>
+                    <Text style={styles.chartGateSubtitle}>
+                      Compare o crescimento do bebê com a referência mundial da OMS
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.chartGateButton}
+                      onPress={() => router.push('/(tabs)/paywall' as any)}
+                    >
+                      <Text style={styles.chartGateButtonText}>Desbloquear Premium</Text>
+                    </TouchableOpacity>
+                  </BlurView>
+                )}
+              </View>
             </View>
 
             <HistoryList
-              entries={[...weights].reverse().map(w => ({
+              entries={[...displayWeights].reverse().map(w => ({
                 id: w.id,
                 valueLabel: (w.weight_grams / 1000).toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 }) + ' kg',
                 date: w.measured_at,
@@ -579,6 +606,9 @@ export default function GrowthScreen() {
                 handleDelete(id, label, 'baby_weights');
               }}
             />
+            {!isPremium && weights.length > FREE_ENTRIES && (
+              <PremiumGateBanner message="Veja todo o histórico de crescimento" />
+            )}
           </>
         )}
 
@@ -612,27 +642,45 @@ export default function GrowthScreen() {
                 )}
               </View>
 
-              {heights.length === 0 && !noBirthDate ? (
-                <Text style={styles.emptyChartText}>Nenhuma altura registrada ainda.</Text>
-              ) : (
-                <GestureDetector gesture={hGesture}>
-                  <View style={styles.chartContainer}>
-                    <GrowthChart
-                      whoData={baby?.gender === 'female' ? WHO_HEIGHT_GIRLS : WHO_HEIGHT_BOYS}
-                      points={heightPoints} chartWidth={chartWidth}
-                      visibleStart={hStart} visibleEnd={hEnd}
-                      yTickStep={5} autoYMin={true} yUnit="cm" accentColor={Colors.secondary}
-                    />
-                  </View>
-                </GestureDetector>
-              )}
+              <View style={styles.chartBlurWrapper}>
+                {heights.length === 0 && !noBirthDate ? (
+                  <Text style={styles.emptyChartText}>Nenhuma altura registrada ainda.</Text>
+                ) : (
+                  <GestureDetector gesture={!isPremium ? Gesture.Manual() : hGesture}>
+                    <View style={styles.chartContainer}>
+                      <GrowthChart
+                        whoData={baby?.gender === 'female' ? WHO_HEIGHT_GIRLS : WHO_HEIGHT_BOYS}
+                        points={heightPoints} chartWidth={chartWidth}
+                        visibleStart={hStart} visibleEnd={hEnd}
+                        yTickStep={5} autoYMin={true} yUnit="cm" accentColor={Colors.secondary}
+                      />
+                    </View>
+                  </GestureDetector>
+                )}
 
-              <ChartLegend accentColor={Colors.secondary} accentLabel="Altura do bebê" />
-              <Text style={styles.zoomHint}>Pinça para zoom · arraste para navegar</Text>
+                <ChartLegend accentColor={Colors.secondary} accentLabel="Altura do bebê" />
+                <Text style={styles.zoomHint}>Pinça para zoom · arraste para navegar</Text>
+
+                {!isPremium && (
+                  <BlurView intensity={55} tint="light" style={styles.chartGateOverlay}>
+                    <Ionicons name="lock-closed" size={28} color={Colors.secondary} />
+                    <Text style={styles.chartGateTitle}>Curva OMS com percentis</Text>
+                    <Text style={styles.chartGateSubtitle}>
+                      Compare o crescimento do bebê com a referência mundial da OMS
+                    </Text>
+                    <TouchableOpacity
+                      style={[styles.chartGateButton, { backgroundColor: Colors.secondary }]}
+                      onPress={() => router.push('/(tabs)/paywall' as any)}
+                    >
+                      <Text style={styles.chartGateButtonText}>Desbloquear Premium</Text>
+                    </TouchableOpacity>
+                  </BlurView>
+                )}
+              </View>
             </View>
 
             <HistoryList
-              entries={[...heights].reverse().map(h => ({
+              entries={[...displayHeights].reverse().map(h => ({
                 id: h.id,
                 valueLabel: (h.height_mm / 10).toFixed(1) + ' cm',
                 date: h.measured_at,
@@ -644,6 +692,9 @@ export default function GrowthScreen() {
                 handleDelete(id, label, 'baby_heights');
               }}
             />
+            {!isPremium && heights.length > FREE_ENTRIES && (
+              <PremiumGateBanner message="Veja todo o histórico de crescimento" />
+            )}
           </>
         )}
 
@@ -887,4 +938,31 @@ const styles = StyleSheet.create({
   cancelButtonText: { color: Colors.text, fontSize: 15, fontWeight: '600' },
   confirmButton: { flex: 1, backgroundColor: Colors.primary, borderRadius: 16, padding: 14, alignItems: 'center' },
   confirmButtonText: { color: Colors.white, fontSize: 15, fontWeight: '700' },
+
+  // Chart gate (blur overlay)
+  chartBlurWrapper: { position: 'relative' },
+  chartGateOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 16,
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 10,
+    padding: 24,
+  },
+  chartGateTitle: { fontSize: 17, fontWeight: '800', color: Colors.text, textAlign: 'center', letterSpacing: -0.3 },
+  chartGateSubtitle: { fontSize: 13, color: Colors.textSecondary, textAlign: 'center', lineHeight: 18 },
+  chartGateButton: {
+    backgroundColor: Colors.primary,
+    borderRadius: 99,
+    paddingVertical: 11,
+    paddingHorizontal: 24,
+    marginTop: 4,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  chartGateButtonText: { fontSize: 14, fontWeight: '700', color: '#fff' },
 });

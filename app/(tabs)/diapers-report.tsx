@@ -16,6 +16,8 @@ import { BabyDiaper } from '@/types/database';
 import { GradientBackground } from '@/components/GradientBackground';
 import { useUserContext } from '@/lib/user-context';
 import { PoopColorId, DiaperType, getPoopColor, isNormalPoop } from '@/lib/diaper-colors';
+import { usePremium } from '@/lib/usePremium';
+import { Ionicons } from '@expo/vector-icons';
 
 const DAYS_PER_PAGE = 3;
 
@@ -68,6 +70,7 @@ function getDayLabel(dateStr: string): string {
 
 export default function DiapersReportScreen() {
   const { effectiveUserId } = useUserContext();
+  const { isPremium, loading: premiumLoading } = usePremium();
 
   const [babyId, setBabyId] = useState<string | null>(null);
   const [diapers, setDiapers] = useState<BabyDiaper[]>([]);
@@ -145,11 +148,39 @@ export default function DiapersReportScreen() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  if (loading) {
+  if (loading || premiumLoading) {
     return (
       <GradientBackground>
         <View style={styles.loadingContainer}>
           <ActivityIndicator color={Colors.primary} />
+        </View>
+      </GradientBackground>
+    );
+  }
+
+  if (!isPremium) {
+    return (
+      <GradientBackground>
+        <View style={styles.gateContainer}>
+          <TouchableOpacity
+            onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)')}
+            style={styles.gateBack}
+          >
+            <Text style={styles.gateBackText}>←</Text>
+          </TouchableOpacity>
+          <View style={styles.gateContent}>
+            <Ionicons name="lock-closed-outline" size={48} color={Colors.primary} />
+            <Text style={styles.gateTitle}>Recurso Premium</Text>
+            <Text style={styles.gateSubtitle}>
+              Os relatórios de fraldas são exclusivos para assinantes Premium.
+            </Text>
+            <TouchableOpacity
+              style={styles.gateButton}
+              onPress={() => router.push('/(tabs)/paywall' as any)}
+            >
+              <Text style={styles.gateButtonText}>Conhecer planos</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </GradientBackground>
     );
@@ -427,4 +458,25 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.glass,
   },
   loadMoreText: { fontSize: 14, fontWeight: '600', color: Colors.primary },
+
+  // Gate
+  gateContainer: { flex: 1, paddingHorizontal: 20 },
+  gateBack: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: Colors.glass, borderWidth: 1, borderColor: Colors.glassBorder,
+    justifyContent: 'center', alignItems: 'center',
+    marginTop: 60, marginBottom: 8,
+  },
+  gateBackText: { fontSize: 20, color: Colors.text, fontWeight: '600' },
+  gateContent: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 16, paddingBottom: 60 },
+  gateTitle: { fontSize: 22, fontWeight: '800', color: Colors.text, letterSpacing: -0.3 },
+  gateSubtitle: { fontSize: 15, color: Colors.textSecondary, textAlign: 'center', lineHeight: 22 },
+  gateButton: {
+    backgroundColor: Colors.primary, borderRadius: 99,
+    paddingVertical: 13, paddingHorizontal: 28,
+    shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3, shadowRadius: 10, elevation: 4,
+    marginTop: 8,
+  },
+  gateButtonText: { fontSize: 15, fontWeight: '700', color: '#fff' },
 });

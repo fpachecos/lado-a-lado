@@ -17,8 +17,11 @@ import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { Colors } from '@/constants/Colors';
 import { UserInvite } from '@/types/database';
+import { usePremium } from '@/lib/usePremium';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function ProfileScreen() {
+  const { isPremium } = usePremium();
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(true);
@@ -291,28 +294,40 @@ export default function ProfileScreen() {
           </Text>
 
           {/* Formulário de novo convite */}
-          <View style={styles.inviteForm}>
-            <TextInput
-              style={styles.inviteInput}
-              value={inviteEmail}
-              onChangeText={setInviteEmail}
-              placeholder="E-mail do convidado"
-              placeholderTextColor={Colors.textTertiary}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
+          {isPremium ? (
+            <View style={styles.inviteForm}>
+              <TextInput
+                style={styles.inviteInput}
+                value={inviteEmail}
+                onChangeText={setInviteEmail}
+                placeholder="E-mail do convidado"
+                placeholderTextColor={Colors.textTertiary}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              <TouchableOpacity
+                style={[styles.inviteButton, sendingInvite && styles.inviteButtonDisabled]}
+                onPress={handleSendInvite}
+                disabled={sendingInvite}
+              >
+                {sendingInvite
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : <Text style={styles.inviteButtonText}>Convidar</Text>
+                }
+              </TouchableOpacity>
+            </View>
+          ) : (
             <TouchableOpacity
-              style={[styles.inviteButton, sendingInvite && styles.inviteButtonDisabled]}
-              onPress={handleSendInvite}
-              disabled={sendingInvite}
+              style={styles.inviteGate}
+              activeOpacity={0.85}
+              onPress={() => router.push('/(tabs)/paywall' as any)}
             >
-              {sendingInvite
-                ? <ActivityIndicator color="#fff" size="small" />
-                : <Text style={styles.inviteButtonText}>Convidar</Text>
-              }
+              <Ionicons name="lock-closed" size={16} color={Colors.primary} />
+              <Text style={styles.inviteGateText}>Envio de convites é exclusivo do Premium</Text>
+              <Text style={styles.inviteGateLink}>Ver planos →</Text>
             </TouchableOpacity>
-          </View>
+          )}
 
           {/* Lista de convites */}
           {loadingInvites ? (
@@ -664,6 +679,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 10,
     alignItems: 'center',
+  },
+  inviteGate: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: Colors.cardPrimary,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.borderPrimary,
+    padding: 14,
+    flexWrap: 'wrap',
+  },
+  inviteGateText: {
+    flex: 1,
+    fontSize: 14,
+    color: Colors.text,
+    fontWeight: '500',
+  },
+  inviteGateLink: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.primary,
   },
   inviteInput: {
     flex: 1,

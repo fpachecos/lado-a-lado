@@ -23,6 +23,8 @@ import DatePicker from '@/components/DatePicker';
 import { useUserContext } from '@/lib/user-context';
 import TimePicker from '@/components/TimePicker';
 import { scheduleFeedingReminder } from '@/lib/notifications';
+import { usePremium } from '@/lib/usePremium';
+import { PremiumGateBanner } from '@/components/PremiumGateBanner';
 
 type Breast = 'left' | 'right' | 'both';
 
@@ -50,8 +52,11 @@ function getDayLabel(dateStr: string): string {
   return format(parseISO(dateStr), "d 'de' MMMM", { locale: ptBR });
 }
 
+const FREE_HISTORY_LIMIT = startOfDay(subDays(new Date(), 7));
+
 export default function FeedingsScreen() {
   const { effectiveUserId } = useUserContext();
+  const { isPremium } = usePremium();
 
   const [baby, setBaby] = useState<Baby | null>(null);
   const [babyId, setBabyId] = useState<string | null>(null);
@@ -402,17 +407,21 @@ export default function FeedingsScreen() {
 
           {/* Botão carregar mais */}
           {hasMore && (
-            <TouchableOpacity
-              style={styles.loadMoreButton}
-              onPress={loadMore}
-              disabled={loadingMore}
-              activeOpacity={0.7}
-            >
-              {loadingMore
-                ? <ActivityIndicator color={Colors.primary} size="small" />
-                : <Text style={styles.loadMoreText}>Carregar mais</Text>
-              }
-            </TouchableOpacity>
+            !isPremium && oldestLoadedDate !== null && oldestLoadedDate < FREE_HISTORY_LIMIT ? (
+              <PremiumGateBanner message="Veja o histórico completo de mamadas" />
+            ) : (
+              <TouchableOpacity
+                style={styles.loadMoreButton}
+                onPress={loadMore}
+                disabled={loadingMore}
+                activeOpacity={0.7}
+              >
+                {loadingMore
+                  ? <ActivityIndicator color={Colors.primary} size="small" />
+                  : <Text style={styles.loadMoreText}>Carregar mais</Text>
+                }
+              </TouchableOpacity>
+            )
           )}
 
           <Text style={styles.deleteHint}>Toque em um registro para editar ou excluir</Text>

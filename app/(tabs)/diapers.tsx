@@ -29,6 +29,8 @@ import {
   getPoopColor,
   isNormalPoop,
 } from '@/lib/diaper-colors';
+import { usePremium } from '@/lib/usePremium';
+import { PremiumGateBanner } from '@/components/PremiumGateBanner';
 
 const DAYS_PER_PAGE = 3;
 
@@ -50,8 +52,11 @@ function hasPoop(type: DiaperType): boolean {
   return type === 'poop' || type === 'both';
 }
 
+const FREE_HISTORY_LIMIT = startOfDay(subDays(new Date(), 7));
+
 export default function DiapersScreen() {
   const { effectiveUserId } = useUserContext();
+  const { isPremium } = usePremium();
 
   const [baby, setBaby] = useState<Baby | null>(null);
   const [babyId, setBabyId] = useState<string | null>(null);
@@ -371,17 +376,21 @@ export default function DiapersScreen() {
           )}
 
           {hasMore && (
-            <TouchableOpacity
-              style={styles.loadMoreButton}
-              onPress={loadMore}
-              disabled={loadingMore}
-              activeOpacity={0.7}
-            >
-              {loadingMore
-                ? <ActivityIndicator color={Colors.primary} size="small" />
-                : <Text style={styles.loadMoreText}>Carregar mais</Text>
-              }
-            </TouchableOpacity>
+            !isPremium && oldestLoadedDate !== null && oldestLoadedDate < FREE_HISTORY_LIMIT ? (
+              <PremiumGateBanner message="Veja o histórico completo de fraldas" />
+            ) : (
+              <TouchableOpacity
+                style={styles.loadMoreButton}
+                onPress={loadMore}
+                disabled={loadingMore}
+                activeOpacity={0.7}
+              >
+                {loadingMore
+                  ? <ActivityIndicator color={Colors.primary} size="small" />
+                  : <Text style={styles.loadMoreText}>Carregar mais</Text>
+                }
+              </TouchableOpacity>
+            )
           )}
 
           <Text style={styles.deleteHint}>Toque em um registro para editar ou excluir</Text>
