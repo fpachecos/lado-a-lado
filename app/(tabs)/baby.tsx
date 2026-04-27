@@ -20,9 +20,11 @@ import DatePicker from '@/components/DatePicker';
 import { parseISO } from 'date-fns';
 import { useUserContext } from '@/lib/user-context';
 import { cancelFeedingReminder, cancelMilestoneNotifications } from '@/lib/notifications';
+import { usePremium } from '@/lib/usePremium';
 
 export default function BabyScreen() {
   const { effectiveUserId } = useUserContext();
+  const { isPremium } = usePremium();
 
   const [baby, setBaby] = useState<Baby | null>(null);
   const [name, setName] = useState('');
@@ -239,20 +241,39 @@ export default function BabyScreen() {
             </View>
           )}
 
-          <View style={[styles.notifRow, { marginTop: 12 }]}>
-            <View style={styles.notifInfo}>
-              <Text style={styles.notifTitle}>Marcos do desenvolvimento</Text>
-              <Text style={styles.notifSubtitle}>
-                Avisa quando uma nova fase estiver próxima
-              </Text>
+          {isPremium ? (
+            <View style={[styles.notifRow, { marginTop: 12 }]}>
+              <View style={styles.notifInfo}>
+                <Text style={styles.notifTitle}>Marcos do desenvolvimento</Text>
+                <Text style={styles.notifSubtitle}>
+                  Avisa quando uma nova fase estiver próxima
+                </Text>
+              </View>
+              <Switch
+                value={milestoneNotifEnabled}
+                onValueChange={setMilestoneNotifEnabled}
+                trackColor={{ false: Colors.neutral, true: Colors.primary }}
+                thumbColor={Colors.white}
+              />
             </View>
-            <Switch
-              value={milestoneNotifEnabled}
-              onValueChange={setMilestoneNotifEnabled}
-              trackColor={{ false: Colors.neutral, true: Colors.primary }}
-              thumbColor={Colors.white}
-            />
-          </View>
+          ) : (
+            <TouchableOpacity
+              style={styles.milestoneGate}
+              onPress={() => router.push('/(tabs)/paywall' as any)}
+              activeOpacity={0.8}
+            >
+              <View style={styles.milestoneGateLeft}>
+                <Ionicons name="lock-closed" size={16} color={Colors.primary} />
+                <View style={styles.notifInfo}>
+                  <Text style={styles.notifTitle}>Marcos do desenvolvimento</Text>
+                  <Text style={styles.notifSubtitle}>
+                    Avisa quando uma nova fase estiver próxima
+                  </Text>
+                </View>
+              </View>
+              <Text style={styles.milestoneGateLink}>Premium →</Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             style={[styles.saveButton, loading && styles.saveButtonDisabled]}
@@ -453,6 +474,30 @@ const styles = StyleSheet.create({
     color: Colors.text,
     minWidth: 32,
     textAlign: 'center',
+  },
+  milestoneGate: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.borderPrimary,
+    backgroundColor: Colors.cardPrimary,
+    gap: 10,
+  },
+  milestoneGateLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  milestoneGateLink: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.primary,
   },
 });
 

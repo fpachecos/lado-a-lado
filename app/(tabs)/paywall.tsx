@@ -13,6 +13,7 @@ import { router } from 'expo-router';
 import { Colors } from '@/constants/Colors';
 import { GradientBackground } from '@/components/GradientBackground';
 import { getOfferings, purchasePackage, restorePurchases, isPremiumUser } from '@/lib/revenuecat';
+import { useUserContext } from '@/lib/user-context';
 import { PurchasesPackage, PACKAGE_TYPE } from 'react-native-purchases';
 
 const FALLBACK_PRICES = {
@@ -41,6 +42,7 @@ interface Plan {
 }
 
 export default function PaywallScreen() {
+  const { refreshPremium } = useUserContext();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState<PlanType | null>(null);
@@ -104,12 +106,10 @@ export default function PaywallScreen() {
     setPurchasing(plan.type);
     try {
       await purchasePackage(plan.pkg);
-      const premium = await isPremiumUser();
-      if (premium) {
-        Alert.alert('Bem-vindo ao Premium!', 'Todas as funcionalidades foram desbloqueadas.', [
-          { text: 'OK', onPress: () => router.canGoBack() ? router.back() : router.replace('/(tabs)') },
-        ]);
-      }
+      await refreshPremium();
+      Alert.alert('Bem-vindo ao Premium!', 'Todas as funcionalidades foram desbloqueadas.', [
+        { text: 'OK', onPress: () => router.canGoBack() ? router.back() : router.replace('/(tabs)') },
+      ]);
     } catch (error: any) {
       if (error.message === 'Purchase cancelled') return;
       Alert.alert('Erro', error.message || 'Não foi possível processar a compra. Tente novamente.');
@@ -122,8 +122,9 @@ export default function PaywallScreen() {
     setRestoring(true);
     try {
       await restorePurchases();
-      const premium = await isPremiumUser();
-      if (premium) {
+      const nowPremium = await isPremiumUser();
+      await refreshPremium();
+      if (nowPremium) {
         Alert.alert('Compras restauradas!', 'Seu acesso Premium foi restaurado.', [
           { text: 'OK', onPress: () => router.canGoBack() ? router.back() : router.replace('/(tabs)') },
         ]);
