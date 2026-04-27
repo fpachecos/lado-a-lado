@@ -15,7 +15,6 @@ import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { Colors } from '@/constants/Colors';
 import { Baby, Companion } from '@/types/database';
-import { isPremiumUser, getOfferings, purchasePackage, restorePurchases } from '@/lib/revenuecat';
 import { GradientBackground } from '@/components/GradientBackground';
 import { useUserContext } from '@/lib/user-context';
 
@@ -45,11 +44,10 @@ const BABY_ACTIONS: BabyAction[] = [
 ];
 
 export default function HomeScreen() {
-  const { effectiveUserId } = useUserContext();
+  const { effectiveUserId, isPremium } = useUserContext();
 
   const [baby, setBaby] = useState<Baby | null>(null);
   const [companions, setCompanions] = useState<Companion[]>([]);
-  const [isPremium, setIsPremium] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const [babyExpanded, setBabyExpanded] = useState(true);
@@ -77,9 +75,6 @@ export default function HomeScreen() {
 
       setBaby(babyData);
       setCompanions(companionsData || []);
-
-      const premium = await isPremiumUser();
-      setIsPremium(premium);
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -105,57 +100,6 @@ export default function HomeScreen() {
           },
         },
       ]);
-    }
-  };
-
-  const handlePurchase = async () => {
-    try {
-      const offering = await getOfferings();
-      if (!offering || !offering.availablePackages || offering.availablePackages.length === 0) {
-        Alert.alert('Indisponível', 'Nenhuma oferta disponível no momento. Tente novamente mais tarde.');
-        return;
-      }
-      const packageToPurchase = offering.availablePackages[0];
-      Alert.alert(
-        'Confirmar Assinatura',
-        `Deseja assinar o plano Premium por ${packageToPurchase.product.priceString}?`,
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          {
-            text: 'Assinar',
-            onPress: async () => {
-              try {
-                await purchasePackage(packageToPurchase);
-                const premium = await isPremiumUser();
-                setIsPremium(premium);
-                Alert.alert('Sucesso!', 'Sua assinatura Premium foi ativada com sucesso!', [{ text: 'OK' }]);
-                await loadData();
-              } catch (error: any) {
-                if (error.message === 'Purchase cancelled') return;
-                Alert.alert('Erro', error.message || 'Não foi possível processar a compra. Tente novamente.');
-              }
-            },
-          },
-        ]
-      );
-    } catch (error: any) {
-      Alert.alert('Erro', error.message || 'Não foi possível carregar as ofertas. Tente novamente.');
-    }
-  };
-
-  const handleRestorePurchases = async () => {
-    try {
-      await restorePurchases();
-      const premium = await isPremiumUser();
-      setIsPremium(premium);
-      if (premium) {
-        Alert.alert('Sucesso', 'Suas compras foram restauradas!');
-        await loadData();
-      } else {
-        Alert.alert('Nenhuma compra encontrada', 'Não encontramos compras para restaurar.');
-      }
-    } catch (error: any) {
-      Alert.alert('Erro', 'Não foi possível restaurar as compras. Tente novamente.');
     }
   };
 
@@ -360,21 +304,22 @@ export default function HomeScreen() {
 
           {/* Card premium */}
           {!isPremium && (
-            <View style={styles.premiumCard}>
+            <TouchableOpacity
+              style={styles.premiumCard}
+              activeOpacity={0.85}
+              onPress={() => router.push('/(tabs)/paywall' as any)}
+            >
               <View style={styles.premiumBadge}>
                 <Text style={styles.premiumBadgeText}>PREMIUM</Text>
               </View>
-              <Text style={styles.premiumTitle}>Agendas de múltiplos dias</Text>
+              <Text style={styles.premiumTitle}>Desbloqueie tudo</Text>
               <Text style={styles.premiumText}>
-                Crie agendas com vários dias de visita para cada acompanhante.
+                Histórico ilimitado, relatórios completos, curvas OMS e muito mais.
               </Text>
-              <TouchableOpacity style={styles.premiumButton} onPress={handlePurchase}>
-                <Text style={styles.premiumButtonText}>Assinar agora</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.restoreButton} onPress={handleRestorePurchases}>
-                <Text style={styles.restoreButtonText}>Restaurar compras</Text>
-              </TouchableOpacity>
-            </View>
+              <View style={styles.premiumButton}>
+                <Text style={styles.premiumButtonText}>Ver planos →</Text>
+              </View>
+            </TouchableOpacity>
           )}
         </View>
 
@@ -774,17 +719,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.2,
   },
-  restoreButton: {
-    marginTop: 14,
-    paddingVertical: 6,
-  },
-  restoreButtonText: {
-    color: Colors.textSecondary,
-    fontSize: 13,
-    fontWeight: '500',
-    textDecorationLine: 'underline',
-  },
-
   // ── Menu Overlay ──
   menuOverlay: {
     flex: 1,

@@ -2,7 +2,7 @@
   "expo": {
     "name": "Lado a Lado",
     "slug": "lado-a-lado",
-    "version": "1.10.5",
+    "version": "1.10.6",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -14,7 +14,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.ladoalado.app",
-      "buildNumber": "1.10.5",
+      "buildNumber": "1.10.6",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Este app precisa acessar suas fotos para personalizar o perfil.",
         "NSSiriUsageDescription": "O Lado a Lado usa a Siri para registrar mamadas rapidamente com sua voz.",
