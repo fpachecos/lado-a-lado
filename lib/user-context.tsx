@@ -8,7 +8,7 @@
  * Todas as telas que fazem queries com .eq('user_id', ...) ou
  * .insert({ user_id: ... }) devem usar effectiveUserId no lugar de user.id.
  */
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { clearSessionForSiri, saveSessionForSiri } from '@/lib/session-sync';
 import { isPremiumUser } from '@/lib/revenuecat';
@@ -43,6 +43,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [isInvited, setIsInvited] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
   const [tick, setTick] = useState(0);
+  const siriSessionRef = useRef<{ userId: string; babyId: string } | null>(null);
 
   const reload = useCallback(() => setTick((t) => t + 1), []);
 
@@ -51,11 +52,15 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     setIsPremium(premium);
   }, []);
 
-  // Limpa dados da Siri quando o usuário faz logout
+  // Mantém a sessão da Siri sincronizada com o token atual
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') {
+        siriSessionRef.current = null;
         clearSessionForSiri();
+      } else if (event === 'TOKEN_REFRESHED' && session?.access_token && siriSessionRef.current) {
+        const { userId, babyId } = siriSessionRef.current;
+        saveSessionForSiri(session.access_token, userId, babyId);
       }
     });
     return () => subscription.unsubscribe();
@@ -102,6 +107,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           .maybeSingle();
 
         if (!cancelled && baby?.id) {
+          siriSessionRef.current = { userId: user.id, babyId: baby.id };
           saveSessionForSiri(session.access_token, user.id, baby.id);
         }
       }
