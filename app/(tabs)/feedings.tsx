@@ -282,17 +282,35 @@ export default function FeedingsScreen() {
   const todayFeedings = grouped[todayKey] || [];
   const todayCount = todayFeedings.length;
 
-  // Intervalo médio entre mamadas do dia (início → início)
-  const todayFeedingsSorted = todayCount > 1
-    ? [...todayFeedings].sort((a, b) => new Date(a.started_at).getTime() - new Date(b.started_at).getTime())
-    : [];
-  const todayAvgInterval = todayFeedingsSorted.length > 1
-    ? Math.round(
-        todayFeedingsSorted.slice(1).reduce((sum, f, i) =>
-          sum + differenceInMinutes(new Date(f.started_at), new Date(todayFeedingsSorted[i].started_at)), 0
-        ) / (todayFeedingsSorted.length - 1)
-      )
-    : 0;
+  // Intervalo médio entre mamadas do dia (início → início), incluindo intervalo do último do dia anterior
+  const yesterdayKey = format(subDays(new Date(), 1), 'yyyy-MM-dd');
+  const yesterdayFeedings = grouped[yesterdayKey] || [];
+  const yesterdayLastFeeding = yesterdayFeedings.length > 0
+    ? [...yesterdayFeedings].sort((a, b) => new Date(a.started_at).getTime() - new Date(b.started_at).getTime()).slice(-1)[0]
+    : null;
+
+  const todayFeedingsSorted = [...todayFeedings].sort(
+    (a, b) => new Date(a.started_at).getTime() - new Date(b.started_at).getTime()
+  );
+
+  const todayAvgInterval = (() => {
+    if (todayFeedingsSorted.length === 0) return 0;
+    const intervals: number[] = [];
+    if (yesterdayLastFeeding) {
+      intervals.push(differenceInMinutes(
+        new Date(todayFeedingsSorted[0].started_at),
+        new Date(yesterdayLastFeeding.started_at)
+      ));
+    }
+    for (let i = 1; i < todayFeedingsSorted.length; i++) {
+      intervals.push(differenceInMinutes(
+        new Date(todayFeedingsSorted[i].started_at),
+        new Date(todayFeedingsSorted[i - 1].started_at)
+      ));
+    }
+    if (intervals.length === 0) return 0;
+    return Math.round(intervals.reduce((sum, v) => sum + v, 0) / intervals.length);
+  })();
 
   if (loading) {
     return (
@@ -338,7 +356,7 @@ export default function FeedingsScreen() {
                   <Text style={styles.summaryItemLabel}>última às</Text>
                 </View>
               )}
-              {todayCount > 1 && (
+              {todayAvgInterval > 0 && (
                 <View style={styles.summaryItem}>
                   <Text style={styles.summaryValue}>{formatDuration(todayAvgInterval)}</Text>
                   <Text style={styles.summaryItemLabel}>intervalo médio</Text>
