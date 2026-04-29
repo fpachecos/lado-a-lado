@@ -103,6 +103,14 @@ export interface BabyDiaper {
   created_at: string;
 }
 
+export interface BabyNap {
+  id: string;
+  baby_id: string;
+  started_at: string;
+  ended_at: string | null;
+  created_at: string;
+}
+
 export interface UserInvite {
   id: string;
   inviter_id: string;
