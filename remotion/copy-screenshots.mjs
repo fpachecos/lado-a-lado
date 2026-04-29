@@ -33,6 +33,9 @@ const ROUTE_MAP = {
   "diapers.png":           "diapers.",
   "diapers-report.png":    "diapers-report",
   "companion.png":         "companion.",
+  "naps.png":              "naps.",
+  "naps-report.png":       "naps-report",
+  "timeline.png":          "timeline.",
 };
 
 if (!existsSync(SRC)) {

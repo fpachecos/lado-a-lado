@@ -27,6 +27,8 @@ const ICONS: Record<string, { codepoint: number; font: string }> = {
   "people-outline":      { codepoint: 0xF4A3, font: "Ionicons" },
   "heart-outline":       { codepoint: 0xF377, font: "Ionicons" },
   "happy-outline":       { codepoint: 0xF362, font: "Ionicons" },
+  "moon-outline":        { codepoint: 0xF461, font: "Ionicons" },
+  "time-outline":        { codepoint: 0xF5DE, font: "Ionicons" },
   // MaterialCommunityIcons outline
   "baby-bottle-outline": { codepoint: 0xF0F3A, font: "MaterialCommunityIcons" },
   "diaper-outline":      { codepoint: 0xF1CCF, font: "MaterialCommunityIcons" },
