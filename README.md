@@ -30,6 +30,13 @@ App iOS/Android de organização do puerpério e dos primeiros meses do bebê. E
 - Controle de trocas com horário e tipo
 - Acompanhamento de padrões ao longo do dia
 
+### Controle de sonecas
+- Botão para iniciar e encerrar sonecas com data e hora editáveis
+- Resumo do dia: total dormindo, quantidade de sonecas e horas acordadas (atualização em tempo real)
+- Relógio animado 24h com visualização dos períodos de sono e vigília
+- Histórico agrupado por dia
+- Recurso Premium: histórico além de 3 dias e relatórios com gráficos históricos
+
 ### Calendário de vacinas
 - Calendário vacinal do bebê com datas e registros
 
@@ -92,6 +99,7 @@ Execute os scripts de `database/` no SQL Editor do Supabase nesta ordem:
 16. `migration_baby_notification_prefs.sql`
 17. `migration_vaccination_schedule.sql`
 18. `migration_baby_diapers.sql`
+19. `migration_baby_naps.sql`
 
 ### 4. Executar
 
