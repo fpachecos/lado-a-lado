@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import Svg, { Circle, Path, Line, Text as SvgText } from 'react-native-svg';
+import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
 import { format, subDays, startOfDay, parseISO, differenceInMinutes } from 'date-fns';
@@ -47,13 +48,13 @@ function getDayLabel(dateStr: string): string {
 
 // Relógio 24h SVG com arcos de sono/acordado
 function SleepClock({ naps, activeNap, now }: { naps: BabyNap[]; activeNap: BabyNap | null; now: Date }) {
-  const size = 180;
+  // Aumentado para 210 para labels não ficarem cortadas nas bordas
+  const size = 210;
   const cx = size / 2;
   const cy = size / 2;
   const r = 72;
   const strokeWidth = 14;
 
-  // Mapeia minutos do dia (0–1440) para ângulo (topo = meia-noite)
   const minToAngle = (min: number) => (min / 1440) * 360 - 90;
 
   const polarToXY = (angleDeg: number, radius: number) => {
@@ -66,46 +67,51 @@ function SleepClock({ naps, activeNap, now }: { naps: BabyNap[]; activeNap: Baby
     const endAngle = minToAngle(endMin);
     const start = polarToXY(startAngle, r);
     const end = polarToXY(endAngle, r);
-    const span = endMin - startMin;
-    const largeArc = span > 720 ? 1 : 0;
+    const largeArc = (endMin - startMin) > 720 ? 1 : 0;
     return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArc} 1 ${end.x} ${end.y}`;
   };
 
   const todayStart = startOfDay(now).getTime();
   const dayMinutes = (ts: number) => (ts - todayStart) / 60000;
 
-  // Períodos de sono de hoje (incluindo soneca ativa)
-  const allNaps = activeNap
-    ? [...naps, activeNap]
-    : naps;
+  const nowMin = Math.min(1440, dayMinutes(now.getTime()));
 
+  const allNaps = activeNap ? [...naps, activeNap] : naps;
   const sleepArcs = allNaps.map(nap => {
     const start = Math.max(0, dayMinutes(new Date(nap.started_at).getTime()));
     const end = nap.ended_at
       ? Math.min(1440, dayMinutes(new Date(nap.ended_at).getTime()))
-      : Math.min(1440, dayMinutes(now.getTime()));
+      : nowMin;
     return { start, end };
   }).filter(a => a.end > a.start);
 
-  // Marcadores de hora (0h, 6h, 12h, 18h)
   const hourMarks = [0, 6, 12, 18];
 
-  // Posição do ponteiro de "agora"
-  const nowMin = dayMinutes(now.getTime());
-  const nowAngle = minToAngle(Math.min(1440, nowMin));
+  const nowAngle = minToAngle(nowMin);
   const nowInner = polarToXY(nowAngle, r - strokeWidth / 2 - 4);
   const nowOuter = polarToXY(nowAngle, r + strokeWidth / 2 + 4);
 
   return (
     <Svg width={size} height={size}>
-      {/* Trilha cinza (24h) */}
+      {/* 1. Trilha cinza completa — futuro (após agora) */}
       <Circle
         cx={cx} cy={cy} r={r}
         fill="none"
-        stroke="rgba(160,144,128,0.18)"
+        stroke="rgba(160,144,128,0.15)"
         strokeWidth={strokeWidth}
       />
-      {/* Arcos de sono */}
+      {/* 2. Arco mint de meia-noite até agora — períodos acordado */}
+      {nowMin > 1 && (
+        <Path
+          d={describeArc(0, nowMin)}
+          fill="none"
+          stroke={Colors.secondary}
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          opacity={0.7}
+        />
+      )}
+      {/* 3. Arcos de sono em coral — por cima do mint */}
       {sleepArcs.map((arc, i) => (
         <Path
           key={i}
@@ -126,15 +132,15 @@ function SleepClock({ naps, activeNap, now }: { naps: BabyNap[]; activeNap: Baby
             key={h}
             x1={inner.x} y1={inner.y}
             x2={outer.x} y2={outer.y}
-            stroke="rgba(120,90,60,0.30)"
+            stroke="rgba(120,90,60,0.35)"
             strokeWidth={1.5}
           />
         );
       })}
-      {/* Labels 0h, 6h, 12h, 18h */}
+      {/* Labels 0h, 6h, 12h, 18h — posicionadas com margem suficiente */}
       {hourMarks.map(h => {
         const angle = minToAngle(h * 60);
-        const pos = polarToXY(angle, r + strokeWidth / 2 + 14);
+        const pos = polarToXY(angle, r + strokeWidth / 2 + 16);
         return (
           <SvgText
             key={`label-${h}`}
@@ -149,7 +155,7 @@ function SleepClock({ naps, activeNap, now }: { naps: BabyNap[]; activeNap: Baby
         );
       })}
       {/* Ponteiro de agora */}
-      {nowMin <= 1440 && (
+      {nowMin > 0 && nowMin < 1440 && (
         <Line
           x1={nowInner.x} y1={nowInner.y}
           x2={nowOuter.x} y2={nowOuter.y}
@@ -368,21 +374,41 @@ export default function NapsScreen() {
   }
 
   // ─── Cálculos de hoje ────────────────────────────────────────────────────────
-  const todayKey = format(now, 'yyyy-MM-dd');
+  const todayMidnight = startOfDay(now);
 
-  const todayNaps = naps.filter(n => format(new Date(n.started_at), 'yyyy-MM-dd') === todayKey);
+  // Sonecas que começaram hoje
+  const todayNaps = naps.filter(n => new Date(n.started_at) >= todayMidnight);
+
+  // Sonecas iniciadas ontem (ou antes) que terminaram já no dia de hoje
+  const crossMidnightNaps = naps.filter(n =>
+    new Date(n.started_at) < todayMidnight &&
+    n.ended_at !== null &&
+    new Date(n.ended_at) > todayMidnight
+  );
+
+  // Porção de hoje das sonecas cross-midnight (meia-noite → ended_at)
+  const crossMidnightContrib = crossMidnightNaps.reduce((sum, n) =>
+    sum + differenceInMinutes(new Date(n.ended_at!), todayMidnight), 0
+  );
+
+  // Soneca ativa: se começou antes de hoje, contar só a partir da meia-noite
+  const activeNapEffectiveStart = activeNap
+    ? (new Date(activeNap.started_at) >= todayMidnight ? new Date(activeNap.started_at) : todayMidnight)
+    : null;
   const todayActiveContrib = activeNap
-    ? Math.max(0, differenceInMinutes(now, new Date(activeNap.started_at)))
+    ? Math.max(0, differenceInMinutes(now, activeNapEffectiveStart!))
     : 0;
+
   const todaySleepMin = todayNaps.reduce((sum, n) => {
     if (!n.ended_at) return sum;
     return sum + differenceInMinutes(new Date(n.ended_at), new Date(n.started_at));
-  }, 0) + todayActiveContrib;
+  }, 0) + crossMidnightContrib + todayActiveContrib;
 
   // Horas acordado = desde meia-noite até agora menos o sono
-  const midnightToNow = differenceInMinutes(now, startOfDay(now));
+  const midnightToNow = differenceInMinutes(now, todayMidnight);
   const awakeMin = Math.max(0, midnightToNow - todaySleepMin);
 
+  // Contagem de sonecas de hoje não inclui cross-midnight (elas aparecem em "Ontem" na lista)
   const napCountToday = todayNaps.length + (activeNap ? 1 : 0);
 
   // Elapsed da soneca ativa
@@ -454,7 +480,7 @@ export default function NapsScreen() {
                 </View>
               </View>
             </View>
-            <SleepClock naps={todayNaps} activeNap={activeNap} now={now} />
+            <SleepClock naps={[...todayNaps, ...crossMidnightNaps]} activeNap={activeNap} now={now} />
           </View>
 
           {/* Botão principal redondo */}
@@ -467,7 +493,12 @@ export default function NapsScreen() {
               onPress={handleMainButton}
               activeOpacity={0.8}
             >
-              <Text style={styles.mainButtonEmoji}>{activeNap ? '☀️' : '🌙'}</Text>
+              <Ionicons
+                name={activeNap ? 'sunny' : 'moon'}
+                size={36}
+                color="#fff"
+                style={{ marginBottom: 4 }}
+              />
               <Text style={styles.mainButtonLabel}>{activeNap ? 'Acordar' : 'Soneca'}</Text>
             </TouchableOpacity>
           </View>
@@ -711,7 +742,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.secondary,
     shadowColor: Colors.secondary,
   },
-  mainButtonEmoji: { fontSize: 32, marginBottom: 4 },
+
   mainButtonLabel: { fontSize: 14, fontWeight: '800', color: '#fff', letterSpacing: 0.3 },
 
   // Day header
