@@ -26,6 +26,7 @@ Sem argumentos. Executa o ciclo completo de descoberta → follow → rotação.
 cat ~/.claude/instagram-planner-config.json
 cat ~/.claude/instagram-accounts-rotation.json 2>/dev/null || echo "[]"
 cat ~/.claude/instagram-growth-log.json 2>/dev/null || echo "[]"
+cat ~/.claude/instagram-hashtags-log.json 2>/dev/null || echo "[]"
 ```
 
 Extrair:
@@ -53,14 +54,78 @@ except:
 excluir = conhecidos | ja_seguidos
 ```
 
+Do hashtags log, coletar hashtags usadas nos últimos 2 ciclos:
+
+```python
+import json, os
+
+hashtags_log_path = os.path.expanduser("~/.claude/instagram-hashtags-log.json")
+try:
+    hashtags_log = json.load(open(hashtags_log_path))
+    # Pegar as hashtags dos 2 ciclos mais recentes
+    ciclos_recentes = hashtags_log[-2:] if len(hashtags_log) >= 2 else hashtags_log
+    recentemente_usadas = {h for ciclo in ciclos_recentes for h in ciclo["hashtags"]}
+except:
+    recentemente_usadas = set()
+```
+
 ### 2. Descobrir contas via hashtag search
 
 Buscar em múltiplas hashtags do nicho para coletar candidatos:
 
-**Hashtags alvo:**
+**Hashtags alvo (pool completo):**
 ```
 maternidadereal, puerperio, recemnascido, primeirosdiasemcasa,
-maedeprimeiraviagem, amamentacao, dicasparamaes, maternidade
+maedeprimeiraviagem, amamentacao, dicasparamaes, maternidade,
+aleitamentomaterno, pospartobrasil, paicoruja, paternidadereal,
+recemnascido2025, sonoinfantil, colicadobebe, vidademae,
+maternidadecomamor, primeiroanodevida
+```
+
+**Seleção das 10 hashtags para o ciclo atual:**
+
+```python
+import random
+
+TODAS_HASHTAGS = [
+    "maternidadereal", "puerperio", "recemnascido", "primeirosdiasemcasa",
+    "maedeprimeiraviagem", "amamentacao", "dicasparamaes", "maternidade",
+    "aleitamentomaterno", "pospartobrasil", "paicoruja", "paternidadereal",
+    "recemnascido2025", "sonoinfantil", "colicadobebe", "vidademae",
+    "maternidadecomamor", "primeiroanodevida"
+]
+
+# Priorizar hashtags não usadas recentemente
+disponiveis = [h for h in TODAS_HASHTAGS if h not in recentemente_usadas]
+
+# Se não houver 10 disponíveis (pool esgotado), reintroduzir as mais antigas
+if len(disponiveis) < 10:
+    faltam = 10 - len(disponiveis)
+    reintroducir = [h for h in TODAS_HASHTAGS if h not in disponiveis][:faltam]
+    disponiveis += reintroducir
+
+hashtags_ciclo = random.sample(disponiveis, min(10, len(disponiveis)))
+print(f"Hashtags deste ciclo: {hashtags_ciclo}")
+```
+
+Registrar imediatamente as hashtags selecionadas no log (mesmo antes de terminar o ciclo):
+
+```python
+import json, datetime, os
+
+hashtags_log_path = os.path.expanduser("~/.claude/instagram-hashtags-log.json")
+try:
+    hashtags_log = json.load(open(hashtags_log_path))
+except:
+    hashtags_log = []
+
+hashtags_log.append({
+    "data_iso": datetime.datetime.utcnow().isoformat(),
+    "hashtags": hashtags_ciclo
+})
+
+with open(hashtags_log_path, "w") as f:
+    json.dump(hashtags_log, f, indent=2, ensure_ascii=False)
 ```
 
 Para cada hashtag:
@@ -323,6 +388,7 @@ Próxima execução sugerida: daqui 7 dias
 |---|---|
 | `~/.claude/instagram-accounts-rotation.json` | Lista de contas para rotação do `/instagram-comment` |
 | `~/.claude/instagram-growth-log.json` | Histórico de contas seguidas pelo `/instagram-growth` |
+| `~/.claude/instagram-hashtags-log.json` | Histórico de hashtags usadas por ciclo (evita repetição nos próximos 2 ciclos) |
 | `~/.claude/instagram-comments-log.json` | Histórico de comentários postados pelo `/instagram-comment` |
 
 ## Pré-requisitos
