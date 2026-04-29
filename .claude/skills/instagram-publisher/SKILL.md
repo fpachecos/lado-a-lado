@@ -142,11 +142,19 @@ Para **carrossel**: gerar uma imagem por slide, traduzindo a descrição de cada
 
 #### Dicas de prompt
 
-- Traduzir para inglês e condensar em ~60 palavras
-- **Sempre gerar sem texto:** toda imagem deve ter `no text, no lettering, no watermark` no final do prompt
+- Traduzir para inglês
+- **O prompt de cada imagem deve ser longo, detalhado e sem ambiguidade** — descrever estilo fotográfico, iluminação exata, ângulo de câmera, expressão facial específica, postura corporal, vestuário, paleta de cores, textura de superfícies, profundidade de campo e mood emocional. Um prompt vago gera imagem genérica. Um prompt de 150–200 palavras gera imagem fotorrealista.
+- **Nunca usar descrições genéricas** como "mãe com bebê", "cena aconchegante" ou "expressão feliz" sem contexto físico específico. Cada detalhe descrito = menos margem para segunda interpretação do modelo.
+- **Sempre gerar sem texto:** toda imagem deve ter `no text, no lettering, no watermark, no typography` no final do prompt
 - Para slides de carrossel: incluir `leave empty space at top (~30% height) for text overlay` quando o OVERLAY for `posição: top`
 - Para imagens únicas: sem modificações de espaço
 - Máximo de 6 slides por carrossel
+
+**Exemplo de prompt RUIM (vago):**
+> "Mother breastfeeding baby at night, tired expression. Warm tones. no text."
+
+**Exemplo de prompt CORRETO (detalhado):**
+> "Ultra-realistic editorial maternity photograph. Young Brazilian mother, late 20s, dark hair loosely pulled back, wearing a soft ivory nursing tank top and grey cotton shorts, sitting in a curved beige linen nursing chair. She is breastfeeding her newborn baby — baby is approximately 2 weeks old, wrapped in a thin white muslin swaddle, full body visible cradled against her left arm, head at breast. It is 3am: the room is dark except for one warm amber night lamp on the bedside table casting a golden pool of light. Mother's face: eyes half-closed with exhaustion, subtle worry line between brows, lips slightly parted — the expression of someone running on love and no sleep. Camera angle: slightly low, 3/4 front view, 50mm lens equivalent, shallow depth of field with soft bokeh on the background. Background: blurred nursery — white crib edge visible, soft grey wall, folded cream blanket on chair arm. Mood: raw tenderness, exhaustion, 3am quiet. Color palette: deep warm shadows, amber glow on skin, ivory and cream highlights. Photojournalistic intimacy, no posed feel. no text, no lettering, no watermark, no typography. Leave empty space at top 30% height for text overlay."
 
 #### Diretrizes de composição visual obrigatórias
 
@@ -178,6 +186,23 @@ Todos os posts devem seguir a identidade visual do app. Exceções só para data
 - Bandas de overlay (texto): usar coral `#FF6F61` ou uma variação escura `#D95F50` para destaques primários; verde-menta `#A8D5BA` ou `#7DB89A` para destaques secundários
 - Slides CTA (último slide): fundo coral sólido `#FF6F61` com texto branco `#FAFAFA`
 - Nunca usar azul bebê (#5B9BD5) ou amarelo-mel (#F5C842) como cor principal — não fazem parte da identidade do app
+
+**⚠️ Regra crítica para prompts enviados ao Gemini:**
+O Gemini não conhece a "identidade Lado a Lado" nem nenhum nome de marca. **Nunca usar nomes de marca ou referências à paleta por nome** (ex: "paleta identidade Lado a Lado", "cores do app") nos prompts de geração de imagem.
+
+Todo prompt enviado ao Gemini deve descrever as cores **diretamente em inglês**, usando nomes de cor e/ou valores hex explícitos. Traduzir sempre:
+
+| Em vez de... | Usar no prompt Gemini... |
+|---|---|
+| "paleta identidade Lado a Lado" | `warm background color #F4E4BC (warm beige), accent color #FF6F61 (soft coral), secondary #A8D5BA (soft mint green)` |
+| "cor primária do app" | `soft coral color (#FF6F61)` |
+| "fundo bege quente" | `warm beige background (#F4E4BC)` |
+| "gradiente do app" | `warm gradient from peach (#FFD4BF) through cream (#FCE8C4) to amber gold (#F0C87A)` |
+| "cor secundária" | `soft mint green (#A8D5BA)` |
+
+Se o slide usa fundo sólido de cor de marca: descrever como `solid warm beige background (#F4E4BC)` ou `solid soft coral background (#FF6F61)`.
+Se usa gradiente: `warm gradient background flowing from peach (#FFD4BF) through cream (#FCE8C4) to golden amber (#F0C87A)`.
+Se a ilustração tem personagens com roupas na paleta do app: nomear as cores diretamente (`coral-red top (#FF6F61)`, `mint green accents (#A8D5BA)`).
 
 ### 2c. Sobrepor texto nas imagens de carrossel (Pillow)
 
