@@ -344,17 +344,19 @@ export default function DiapersScreen() {
                     <Text style={styles.diaperTime}>
                       {format(new Date(diaper.recorded_at), 'HH:mm')}
                     </Text>
-                    {color && (
-                      <View style={styles.colorInfo}>
-                        <View style={[styles.colorDot, { backgroundColor: color.hex }]} />
-                        <Text style={styles.colorLabel}>{color.label}</Text>
-                        {!color.normal && (
-                          <View style={styles.abnormalBadge}>
-                            <Text style={styles.abnormalBadgeText}>Atenção</Text>
-                          </View>
-                        )}
-                      </View>
-                    )}
+                    <View style={styles.colorInfo}>
+                      {color && (
+                        <>
+                          <View style={[styles.colorDot, { backgroundColor: color.hex }]} />
+                          <Text style={styles.colorLabel}>{color.label}</Text>
+                          {!color.normal && (
+                            <View style={styles.abnormalBadge}>
+                              <Text style={styles.abnormalBadgeText}>Atenção</Text>
+                            </View>
+                          )}
+                        </>
+                      )}
+                    </View>
                     <View style={[
                       styles.typeBadge,
                       diaper.type === 'poop' && styles.typeBadgePoop,

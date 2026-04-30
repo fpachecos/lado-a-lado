@@ -18,10 +18,12 @@ import { supabase } from '@/lib/supabase';
 import { Colors } from '@/constants/Colors';
 import { UserInvite } from '@/types/database';
 import { usePremium } from '@/lib/usePremium';
+import { useUserContext } from '@/lib/user-context';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function ProfileScreen() {
   const { isPremium } = usePremium();
+  const { isInvited } = useUserContext();
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(true);
@@ -286,98 +288,100 @@ export default function ProfileScreen() {
           ) : null}
         </View>
 
-        {/* Convites */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Convites</Text>
-          <Text style={styles.inviteDescription}>
-            Convide alguém pelo e-mail para acessar o app com os dados da sua conta.
-          </Text>
+        {/* Convites — oculto para usuários convidados */}
+        {!isInvited && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Convites</Text>
+            <Text style={styles.inviteDescription}>
+              Convide alguém pelo e-mail para acessar o app com os dados da sua conta.
+            </Text>
 
-          {/* Formulário de novo convite */}
-          {isPremium ? (
-            <View style={styles.inviteForm}>
-              <TextInput
-                style={styles.inviteInput}
-                value={inviteEmail}
-                onChangeText={setInviteEmail}
-                placeholder="E-mail do convidado"
-                placeholderTextColor={Colors.textTertiary}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
+            {/* Formulário de novo convite */}
+            {isPremium ? (
+              <View style={styles.inviteForm}>
+                <TextInput
+                  style={styles.inviteInput}
+                  value={inviteEmail}
+                  onChangeText={setInviteEmail}
+                  placeholder="E-mail do convidado"
+                  placeholderTextColor={Colors.textTertiary}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                <TouchableOpacity
+                  style={[styles.inviteButton, sendingInvite && styles.inviteButtonDisabled]}
+                  onPress={handleSendInvite}
+                  disabled={sendingInvite}
+                >
+                  {sendingInvite
+                    ? <ActivityIndicator color="#fff" size="small" />
+                    : <Text style={styles.inviteButtonText}>Convidar</Text>
+                  }
+                </TouchableOpacity>
+              </View>
+            ) : (
               <TouchableOpacity
-                style={[styles.inviteButton, sendingInvite && styles.inviteButtonDisabled]}
-                onPress={handleSendInvite}
-                disabled={sendingInvite}
+                style={styles.inviteGate}
+                activeOpacity={0.85}
+                onPress={() => router.push('/(tabs)/paywall' as any)}
               >
-                {sendingInvite
-                  ? <ActivityIndicator color="#fff" size="small" />
-                  : <Text style={styles.inviteButtonText}>Convidar</Text>
-                }
+                <Ionicons name="lock-closed" size={16} color={Colors.primary} />
+                <Text style={styles.inviteGateText}>Envio de convites é exclusivo do Premium</Text>
+                <Text style={styles.inviteGateLink}>Ver planos →</Text>
               </TouchableOpacity>
-            </View>
-          ) : (
-            <TouchableOpacity
-              style={styles.inviteGate}
-              activeOpacity={0.85}
-              onPress={() => router.push('/(tabs)/paywall' as any)}
-            >
-              <Ionicons name="lock-closed" size={16} color={Colors.primary} />
-              <Text style={styles.inviteGateText}>Envio de convites é exclusivo do Premium</Text>
-              <Text style={styles.inviteGateLink}>Ver planos →</Text>
-            </TouchableOpacity>
-          )}
+            )}
 
-          {/* Lista de convites */}
-          {loadingInvites ? (
-            <ActivityIndicator color={Colors.primary} style={{ marginTop: 12 }} />
-          ) : invites.length > 0 ? (
-            <View style={styles.invitesList}>
-              <Text style={styles.invitesListTitle}>Acessos ativos e pendentes</Text>
-              {invites.map((invite) => (
-                <View key={invite.id} style={styles.inviteItem}>
-                  <View style={styles.inviteItemInfo}>
-                    <Text style={styles.inviteItemEmail} numberOfLines={1}>
-                      {invite.invitee_email}
-                    </Text>
-                    <View style={[
-                      styles.inviteStatusBadge,
-                      invite.status === 'accepted' && styles.inviteStatusAccepted,
-                    ]}>
-                      <Text style={[
-                        styles.inviteStatusText,
-                        invite.status === 'accepted' && styles.inviteStatusTextAccepted,
-                      ]}>
-                        {invite.status === 'accepted' ? 'Ativo' : 'Pendente'}
+            {/* Lista de convites */}
+            {loadingInvites ? (
+              <ActivityIndicator color={Colors.primary} style={{ marginTop: 12 }} />
+            ) : invites.length > 0 ? (
+              <View style={styles.invitesList}>
+                <Text style={styles.invitesListTitle}>Acessos ativos e pendentes</Text>
+                {invites.map((invite) => (
+                  <View key={invite.id} style={styles.inviteItem}>
+                    <View style={styles.inviteItemInfo}>
+                      <Text style={styles.inviteItemEmail} numberOfLines={1}>
+                        {invite.invitee_email}
                       </Text>
+                      <View style={[
+                        styles.inviteStatusBadge,
+                        invite.status === 'accepted' && styles.inviteStatusAccepted,
+                      ]}>
+                        <Text style={[
+                          styles.inviteStatusText,
+                          invite.status === 'accepted' && styles.inviteStatusTextAccepted,
+                        ]}>
+                          {invite.status === 'accepted' ? 'Ativo' : 'Pendente'}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.inviteActions}>
+                      {invite.status === 'pending' && (
+                        <TouchableOpacity
+                          style={styles.resendButton}
+                          onPress={() => handleResendInvite(invite)}
+                          disabled={resendingInviteId === invite.id}
+                        >
+                          {resendingInviteId === invite.id
+                            ? <ActivityIndicator color={Colors.primary} size="small" />
+                            : <Text style={styles.resendButtonText}>Reenviar</Text>
+                          }
+                        </TouchableOpacity>
+                      )}
+                      <TouchableOpacity
+                        style={styles.revokeButton}
+                        onPress={() => handleRevokeInvite(invite)}
+                      >
+                        <Text style={styles.revokeButtonText}>Revogar</Text>
+                      </TouchableOpacity>
                     </View>
                   </View>
-                  <View style={styles.inviteActions}>
-                    {invite.status === 'pending' && (
-                      <TouchableOpacity
-                        style={styles.resendButton}
-                        onPress={() => handleResendInvite(invite)}
-                        disabled={resendingInviteId === invite.id}
-                      >
-                        {resendingInviteId === invite.id
-                          ? <ActivityIndicator color={Colors.primary} size="small" />
-                          : <Text style={styles.resendButtonText}>Reenviar</Text>
-                        }
-                      </TouchableOpacity>
-                    )}
-                    <TouchableOpacity
-                      style={styles.revokeButton}
-                      onPress={() => handleRevokeInvite(invite)}
-                    >
-                      <Text style={styles.revokeButtonText}>Revogar</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ))}
-            </View>
-          ) : null}
-        </View>
+                ))}
+              </View>
+            ) : null}
+          </View>
+        )}
 
         {/* Senha */}
         <View style={styles.section}>
