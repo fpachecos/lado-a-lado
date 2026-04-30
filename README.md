@@ -100,6 +100,9 @@ Execute os scripts de `database/` no SQL Editor do Supabase nesta ordem:
 17. `migration_vaccination_schedule.sql`
 18. `migration_baby_diapers.sql`
 19. `migration_baby_naps.sql`
+20. `migration_fix_invited_users_diapers_naps_premium.sql`
+21. `migration_user_premium_status.sql`
+22. `migration_invite_premium_whitelist_sync.sql`
 
 ### 4. Executar
 
